@@ -1,0 +1,8 @@
+[project]
+name = "ml-training-ui"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["ml-training-demo-lab", "streamlit>=1.40,<2", "pytest>=8,<10"]
+
+[tool.uv.sources]
+ml-training-demo-lab = { path = "../..", editable = true }

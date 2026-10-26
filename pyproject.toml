@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ml-training-demo-lab"
+version = "0.1.0"
+description = "Measured, local-first ML training demonstrations"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "numpy>=2,<3",
+  "polars>=1,<2",
+  "scikit-learn>=1.6,<2",
+  "xgboost>=3,<4",
+  "joblib>=1.4,<2",
+  "onnxruntime>=1.20,<2",
+  "skl2onnx>=1.18,<2",
+  "shap>=0.48,<1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+ml-demo = "ml_training.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ml_training"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

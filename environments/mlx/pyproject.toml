@@ -1,0 +1,12 @@
+[project]
+name = "ml-training-mlx"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ml-training-demo-lab",
+  "mlx-lm[train]>=0.30,<1",
+  "pytest>=8,<10",
+]
+
+[tool.uv.sources]
+ml-training-demo-lab = { path = "../..", editable = true }

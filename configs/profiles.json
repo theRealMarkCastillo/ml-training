@@ -1,0 +1,14 @@
+{
+  "note": "Summary of implemented bounded experiments. Task runners define defaults; each saved run.json and training record is authoritative for the executed settings. This file is descriptive, not a runtime override.",
+  "smoke": {"events": 2000, "xgboost_estimators": 25, "purpose": "wiring checks only"},
+  "local": {"events": 50000, "xgboost_estimators": 160, "seeds": [41, 42, 43]},
+  "local_neural_budgets": {
+    "distillation": {"teacher_requests": 2016, "epochs": 2, "batch_size": 8, "max_sequence_length": 512, "max_completion_tokens": 64},
+    "schema_dsl": {"training_examples": 1000, "epochs": 2, "batch_size": 4, "max_sequence_length": 512, "max_completion_tokens": 160},
+    "edge": {"training_examples": 512, "epochs": 2, "batch_size": 4, "max_sequence_length": 512, "max_completion_tokens": 64},
+    "retrieval": {"epochs": 2, "bi_encoder_batch_size": 16, "bi_encoder_max_sequence_length": 160, "cross_encoder_batch_size": 32, "cross_encoder_max_sequence_length": 192},
+    "rlvr": {"training_prompt_pool": 500, "optimizer_steps": 50, "completions_per_group": 4, "max_completion_tokens": 160, "accepted_device": "cpu", "control_budget": "Same measured training wall time from identical initial adapter"},
+    "hybrid": {"evaluation_scenarios": 32, "calibration_scenarios": 12, "pipeline_variants": 10}
+  },
+  "thread_policy": {"xgboost_n_jobs": 1, "onnx_intra_op_threads": 1, "onnx_inter_op_threads": 1, "rlvr_cpu_threads": 4, "benchmark_concurrency": 1}
+}

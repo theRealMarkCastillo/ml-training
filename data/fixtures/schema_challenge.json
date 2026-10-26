@@ -1,0 +1,10 @@
+[
+  {"id":"schema-challenge-01","user":"How many tickets are open?","expected":{"filter":{"field":"status","op":"eq","value":"open"},"aggregate":{"op":"count"}}},
+  {"id":"schema-challenge-02","user":"List IDs of tickets aged strictly more than 24 hours, not those exactly 24 hours old.","expected":{"filter":{"field":"age_hours","op":"gt","value":24},"aggregate":{"op":"ids"}}},
+  {"id":"schema-challenge-03","user":"Count urgent tickets assigned to billing.","expected":{"filter":{"all":[{"field":"priority","op":"eq","value":"urgent"},{"field":"team","op":"eq","value":"billing"}]},"aggregate":{"op":"count"}}},
+  {"id":"schema-challenge-04","user":"Find the total amount for tickets that are not closed.","expected":{"filter":{"field":"status","op":"ne","value":"closed"},"aggregate":{"op":"sum","field":"amount"}}},
+  {"id":"schema-challenge-05","user":"What is the average age_hours of security-team tickets?","expected":{"filter":{"field":"team","op":"eq","value":"security"},"aggregate":{"op":"mean","field":"age_hours"}}},
+  {"id":"schema-challenge-06","user":"Count cases with amount at least 50, including exactly 50.","expected":{"filter":{"field":"amount","op":"ge","value":50},"aggregate":{"op":"count"}}},
+  {"id":"schema-challenge-07","user":"List IDs for tickets that are urgent OR pending.","expected":{"filter":{"any":[{"field":"priority","op":"eq","value":"urgent"},{"field":"status","op":"eq","value":"pending"}]},"aggregate":{"op":"ids"}}},
+  {"id":"schema-challenge-08","user":"Count tickets where priority equals urgent AND amount is at most 25.","expected":{"filter":{"all":[{"field":"priority","op":"eq","value":"urgent"},{"field":"amount","op":"le","value":25}]},"aggregate":{"op":"count"}}}
+]

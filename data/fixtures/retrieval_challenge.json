@@ -1,0 +1,14 @@
+[
+  {"query_id":"challenge-01","text":"We are pinned to v2. I only need to look at the thermostat's settings, without altering anything. Which device thermostat reference is right?","positive_id":"device-thermostat-v2-read","family":"device-thermostat","version":"v2","operation":"read"},
+  {"query_id":"challenge-02","text":"The client still uses v1: I need to change the temperature controller configuration. Please avoid the newer contract.","positive_id":"device-thermostat-v1-update","family":"device-thermostat","version":"v1","operation":"update"},
+  {"query_id":"challenge-03","text":"For a version 3 callback signing credential, where is the operation that changes its settings?","positive_id":"webhook-secret-v3-update","family":"webhook-secret","version":"v3","operation":"update"},
+  {"query_id":"challenge-04","text":"Read the current webhook secret state in v2. Do not send an update.","positive_id":"webhook-secret-v2-read","family":"webhook-secret","version":"v2","operation":"read"},
+  {"query_id":"challenge-05","text":"I have a v1 session lease identifier and want to inspect the reservation.","positive_id":"session-lease-v1-read","family":"session-lease","version":"v1","operation":"read"},
+  {"query_id":"challenge-06","text":"Version 2 login reservations need a configuration change. Find the session lease endpoint for that action.","positive_id":"session-lease-v2-update","family":"session-lease","version":"v2","operation":"update"},
+  {"query_id":"challenge-07","text":"Where can the preview v3 client inspect the application release position, with no mutation?","positive_id":"deployment-slot-v3-read","family":"deployment-slot","version":"v3","operation":"read"},
+  {"query_id":"challenge-08","text":"Modify a deployment slot using the legacy v1 interface; the v2 page is not applicable.","positive_id":"deployment-slot-v1-update","family":"deployment-slot","version":"v1","operation":"update"},
+  {"query_id":"challenge-09","text":"Find the read-only v2 reference for a compliance event archive, also called an audit export.","positive_id":"audit-export-v2-read","family":"audit-export","version":"v2","operation":"read"},
+  {"query_id":"challenge-10","text":"Change audit export settings using the version 3 contract.","positive_id":"audit-export-v3-update","family":"audit-export","version":"v3","operation":"update"},
+  {"query_id":"challenge-11","text":"An old v1 workflow trigger needs to be inspected, not edited. Which automation rule page is relevant?","positive_id":"automation-rule-v1-read","family":"automation-rule","version":"v1","operation":"read"},
+  {"query_id":"challenge-12","text":"Use v2 to change our automation rule. Return the modifying operation, rather than the inspection route.","positive_id":"automation-rule-v2-update","family":"automation-rule","version":"v2","operation":"update"}
+]

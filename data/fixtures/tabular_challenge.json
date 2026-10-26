@@ -1,0 +1,7 @@
+{
+  "description": "Independently authored plausibility pair: a modest domestic grocery purchase versus a large foreign digital purchase following repeated authentication failures. No empirical outcome labels are asserted. High-risk row should score above low-risk row for a useful nonconstant model.",
+  "rows": [
+    {"amount": 24.0, "hour_sin": 0.0, "hour_cos": -1.0, "failed_auth": 0, "is_foreign": 0, "account_age_days": 1200, "prior_count_1h": 1, "prior_failure_rate_1h": 0.0, "prior_mean_amount_1h": 30.0, "merchant": "grocery"},
+    {"amount": 450.0, "hour_sin": 0.5, "hour_cos": 0.866, "failed_auth": 3, "is_foreign": 1, "account_age_days": 10, "prior_count_1h": 6, "prior_failure_rate_1h": 0.8, "prior_mean_amount_1h": 300.0, "merchant": "digital"}
+  ]
+}

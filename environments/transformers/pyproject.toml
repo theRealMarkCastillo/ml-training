@@ -1,0 +1,15 @@
+[project]
+name = "ml-training-transformers"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ml-training-demo-lab",
+  "torch>=2.6,<3",
+  "sentence-transformers>=5,<6",
+  "transformers>=4.51,<5",
+  "rank-bm25>=0.2.2,<1",
+  "pytest>=8,<10",
+]
+
+[tool.uv.sources]
+ml-training-demo-lab = { path = "../..", editable = true }

@@ -1,0 +1,15 @@
+[project]
+name = "ml-training-rlvr"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ml-training-demo-lab",
+  "trl>=1.8,<1.9",
+  "peft>=0.17,<1",
+  "torch>=2.8,<3",
+  "requests>=2.32,<3",
+  "pytest>=8,<10",
+]
+
+[tool.uv.sources]
+ml-training-demo-lab = { path = "../..", editable = true }

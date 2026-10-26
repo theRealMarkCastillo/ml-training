@@ -1,0 +1,35 @@
+{
+  "language_models": {
+    "student": {
+      "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "license": "apache-2.0",
+      "license_source": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct"
+    },
+    "teacher": {
+      "model_id": "mlx-community/Qwen2.5-14B-Instruct-4bit",
+      "revision": "dad510143ae5cdb1466778bde3161460f9e9f604",
+      "base_model_id": "Qwen/Qwen2.5-14B-Instruct",
+      "license": "apache-2.0",
+      "license_source": "https://huggingface.co/Qwen/Qwen2.5-14B-Instruct"
+    },
+    "selection_status": "Actual teacher generation, three MLX task adapters and CPU GRPO completed with saved/reloaded held-out evaluations. Selected runs and quality limitations are recorded in docs/PROGRESS.md; feasibility probes alone are not completion evidence.",
+    "verified_card_date": "2026-10-26"
+  },
+  "retrieval": {
+    "bi_encoder": {
+      "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "license": "apache-2.0",
+      "license_source": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"
+    },
+    "cross_encoder": {
+      "model_id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+      "revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+      "license": "apache-2.0",
+      "license_source": "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2"
+    },
+    "selection_status": "Bi-encoder and cross-encoder separately trained on MPS, selected by validation, saved/reloaded and reproduced in a second locked environment. Full pipeline and fixed-candidate-pool comparisons are in docs/RETRIEVAL_RESULTS.md.",
+    "verified_card_date": "2026-10-26"
+  }
+}
