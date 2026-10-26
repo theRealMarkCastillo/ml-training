@@ -1,5 +1,7 @@
 # D05–D07: prediction, serving and explanations
 
+Visual companions: [D05 notebook](../notebooks/D05_tabular_prediction.ipynb), [D06 notebook](../notebooks/D06_inference_optimization.ipynb), [D07 notebook](../notebooks/D07_feature_attribution.ipynb). These plot the recorded evidence and include editable examples without loading models; see the [notebook guide](../notebooks/README.md).
+
 These three lessons form a first learning path through applied ML. D05 asks whether a model can rank risky events; D06 asks how to serve a classifier efficiently; D07 asks what an explanation of a prediction actually means. You will train and reload real models, inspect errors, and practice separating model quality from deployment behavior.
 
 Read the [learning guide](LEARNING_GUIDE.md) for metric definitions. Start with D05 and a single seed; repeat the three-seed experiments after you understand the artifacts. D07 requires a completed D05 run. All datasets are synthetic, and the [results chapter](CPU_RESULTS.md) is a worked interpretation of the recorded experiments.

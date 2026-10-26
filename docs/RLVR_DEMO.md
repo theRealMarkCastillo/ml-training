@@ -1,5 +1,7 @@
 # D03: executable-reward GRPO
 
+Visual companions: [D03 notebook](../notebooks/D03_verifiable_rewards.ipynb). These plot the recorded evidence and include editable examples without loading models; see the [notebook guide](../notebooks/README.md).
+
 Status: the full 50-step CPU pilot completed actual GRPO updates, checkpoint reload, hidden evaluation and a matched-time SFT control. It did not improve held-out accuracy over SFT; see [observed results](RLVR_RESULTS.md). Clean-environment exact-output replay and the separate latency/startup profile passed; [PROGRESS.md](PROGRESS.md) records the overall lab status.
 
 ## The learning question

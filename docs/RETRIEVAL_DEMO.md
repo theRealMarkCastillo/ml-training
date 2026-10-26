@@ -1,5 +1,7 @@
 # D08: Version-aware retrieval and reranking
 
+Visual companions: [D08 notebook](../notebooks/D08_retrieval.ipynb). These plot the recorded evidence and include editable examples without loading models; see the [notebook guide](../notebooks/README.md).
+
 This demo fine-tunes two real transformer models independently: a bi-encoder for vector retrieval and a cross-encoder for reranking. It compares both with BM25 and their untuned checkpoints. The latest observed experiment is summarized in [RETRIEVAL_RESULTS.md](RETRIEVAL_RESULTS.md).
 
 ## The learning question

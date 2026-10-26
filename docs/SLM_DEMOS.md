@@ -1,5 +1,7 @@
 # D01, D02 and D04: local language-model training
 
+Visual companions: [D01 notebook](../notebooks/D01_distillation.ipynb), [D02 notebook](../notebooks/D02_structured_generation.ipynb), [D04 notebook](../notebooks/D04_local_inference.ipynb). These plot the recorded evidence and include editable examples without loading models; see the [notebook guide](../notebooks/README.md).
+
 These lessons explore three different reasons to customize a language model: imitate a teacher on a narrow task, produce an executable structured answer, and run a compact model locally. They share a pinned 0.5B student and MLX trainer, but have separate adapters and evaluation contracts. Read the [learning guide](LEARNING_GUIDE.md) first and keep the [observed results](SLM_RESULTS.md) open while working through the examples.
 
 ## Shared background: what SFT and LoRA change

@@ -51,3 +51,16 @@ A checker needs a failure that it can detect. If the UI did nothing after submis
 A timeout needs an ownership boundary. Ending the controller is insufficient when model workers continue holding resources or pipes. A reproduction helper needs a fresh-directory test, because an existing local selection file can conceal missing setup work. A parser needs rejection cases as well as accepted grammar examples, because substring matches can silently ignore a user's negation.
 
 **Exercise:** for each fix, describe a plausible incorrect implementation that should fail its regression test. If your proposed test would still pass that implementation, tighten the observable contract. See [tests/test_ui_evidence.py](../tests/test_ui_evidence.py), [tests/test_processes.py](../tests/test_processes.py), [tests/test_run_selection.py](../tests/test_run_selection.py) and [tests/test_schema_data.py](../tests/test_schema_data.py).
+
+## Visual notebook review
+
+Reviewed on 2026-10-26 before publishing the nine [visual lessons](../notebooks/README.md). Scope: notebook code and teaching text, snapshot loading/export, execution checks, tests and setup documentation. Entire had no checkpoint/session context for these changes; the review used the working tree and the tutorial requirements in the conversation. No critical or high issues were found. Two medium issues were reproduced and corrected:
+
+| Location | Failure and consequence | Correction and regression evidence |
+| --- | --- | --- |
+| [Snapshot exporter](../scripts/export_notebook_snapshot.py) | Selectors and profiling commands can name the same run using absolute or relative paths. String comparisons rejected equivalent paths, preventing valid local results from being exported. | Canonical repository-relative paths now identify runs in both classifier profiles and hybrid analysis. Tests cover all four absolute/relative combinations and retain rejection of different runs and changed manifest hashes. |
+| [D01 notebook](../notebooks/D01_distillation.ipynb) | The training pipeline can validly record no time-only break-even as `null`. Dividing by that value crashed the teaching calculation; zero also caused division by zero. | The cell explains a missing/nonpositive/nonfinite break-even and skips the savings forecast. Regressions execute the actual notebook cell with missing, zero and negative values. The supplied positive example retains its original plot. |
+
+Post-fix validation passed 94 existing contract tests and 25 notebook tests in their respective locked environments. All nine saved notebooks passed structure, link, execution-order and freshness checks, with 26 figures. D01 was rerun in a fresh kernel after its correction; the other eight retained their previously executed, fingerprint-matching outputs. All 49 source-file hashes matched, and a new export was byte-identical to the checked-in snapshot. These checks do not repeat model training or model inference.
+
+The reusable lessons are to compare resource identity rather than path spelling, and to treat a valid negative result as data the presentation must handle. Neither fix changes model selection, measured outcomes or the historical evidence. After the corrections, no blocking findings remained within this review scope.

@@ -11,6 +11,7 @@ The experiments include useful negative results. The distilled router reached 10
 Read the [learning guide](docs/LEARNING_GUIDE.md) for prerequisites, evaluation vocabulary and the experiment workflow. Then choose a route:
 
 - **Choosing an architecture:** use the [architecture decision guide](docs/ARCHITECTURE_DECISION_GUIDE.md) for use/avoid criteria, alternatives beyond the repo, and a reusable decision record.
+- **Learning visually:** open the [nine Jupyter lessons](notebooks/README.md) for recorded-result charts, editable examples and architecture exercises. They run without model downloads and include saved figures for browsing.
 - **First ML project:** start with D05, D06 and D07. These CPU lessons teach prediction, calibration, deployment measurement and explanations without downloading language models.
 - **Language-model customization:** read the shared LoRA background, then work through D01, D02 and D04. Continue to D03 after producing the D02 checkpoint.
 - **Search and assistants:** start with D08. After completing the component lessons, use D09 to investigate whether their gains survive integration.

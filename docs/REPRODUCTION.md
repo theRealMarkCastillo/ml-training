@@ -7,6 +7,7 @@ Reproducibility is itself a lesson: can another environment reconstruct the resu
 | Check | What you learn | What it does not establish |
 | --- | --- | --- |
 | Contract tests | Specified data, parser, gate and artifact invariants hold on the tested fixtures | Model quality |
+| Visual notebook execution | Charts and small examples run from the versioned evidence snapshot without model artifacts | New training, new model inference or production performance |
 | Smoke training | The small workflow can create and reload an artifact | Full-budget effectiveness |
 | Artifact hash verification | Recorded files have not changed | Correctness or trustworthy provenance by itself |
 | Saved-model replay | The installed environment reproduces recorded inference and metrics | A new training run will converge to the same model |
@@ -21,7 +22,9 @@ The observed host is an Apple M2 Max with 96 GB RAM, macOS arm64 and Python 3.12
 
 ## Install separate environments
 
-From the repository root, install `uv`, Python 3.12 and macOS OpenMP (`brew install libomp`) if absent. The dependency versions used here are pinned in the root and four environment lockfiles. Do not combine their current Transformers requirements into one environment.
+The [visual notebooks](../notebooks/README.md) have an independent, lightweight environment: `uv sync --project environments/notebooks --frozen`. They do not require the model environments or macOS OpenMP below.
+
+For the full lab, install `uv`, Python 3.12 and macOS OpenMP (`brew install libomp`) if absent. Training and UI dependencies are pinned in the root and four environment lockfiles; notebooks have a fifth environment lockfile. Do not combine their current Transformers requirements into one environment.
 
 ```bash
 uv sync --frozen

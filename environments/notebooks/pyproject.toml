@@ -1,0 +1,14 @@
+[project]
+name = "ml-training-notebooks"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "numpy>=2,<3",
+  "matplotlib>=3.10,<4",
+  "jupyterlab>=4,<5",
+  "ipykernel>=6,<8",
+  "nbclient>=0.10,<1",
+  "nbformat>=5.10,<6",
+  "nbconvert>=7,<8",
+  "pytest>=8,<10",
+]

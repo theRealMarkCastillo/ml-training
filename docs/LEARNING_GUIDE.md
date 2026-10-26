@@ -8,6 +8,8 @@ For a design decision before running code, read the [architecture decision guide
 
 ## Choose a learning path
 
+The [nine visual notebooks](../notebooks/README.md) follow these same paths. They plot the recorded experiments and provide small editable examples, so you can start without downloading models. Use the CLI tutorials when you are ready to train or run new model inference.
+
 | Path | Order | What you should be able to explain afterward |
 | --- | --- | --- |
 | Prediction and serving | [D05 → D06 → D07](CPU_DEMOS.md) | Why ranking, calibrated probability, a decision threshold, service latency and an explanation are different objects |
