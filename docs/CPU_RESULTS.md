@@ -1,5 +1,7 @@
 # CPU demo results
 
+Use this chapter as the worked case study for [D05–D07](CPU_DEMOS.md). First predict which model should win and which operational constraint could still fail. Then read the tables in order: ranking quality, exported execution, and explanation fidelity. The measurements below are retained from the recorded runs; the interpretation questions do not introduce new experiments.
+
 Observed locally on 2026-10-26. These results establish functioning synthetic-data demos, not production effectiveness.
 
 ## Validation
@@ -73,3 +75,18 @@ The duplicate-feature example produced prediction difference 0 while moving attr
 Later milestones have their own [retrieval results](RETRIEVAL_RESULTS.md), [language-model results](SLM_RESULTS.md), and [comparison UI](COMPARISON_UI.md). [PROGRESS.md](PROGRESS.md) records current completion and reproduction status.
 
 The earliest smoke/local tabular attempts failed while writing the final manifest because XGBoost represents missing values with NaN. The serialization fix is in place; those attempts remain explicitly marked failed. A socket-restricted classifier smoke run retains a blocked HTTP measurement. Neither is used in the tables above.
+
+## Interpreting the three lessons together
+
+The tabular model, exported classifier and explanation answer different questions. D05's AP improvement is evidence about ranking on a future synthetic period. D06's parity result is evidence that two implementations agree numerically. D07's additivity result is evidence that an explanation reconstructs the chosen model output. None can stand in for the others.
+
+| Observation | Supported interpretation | Tempting inference to avoid |
+| --- | --- | --- |
+| XGBoost wins AP across three seeds | The tested generator contains signal this configuration captures better than logistic regression | The threshold will retain its 5% FPR budget later |
+| ONNX reproduces probabilities and is fast locally | Export is faithful within tolerance and useful on this measured workload | The same row rate is available as HTTP throughput |
+| SHAP additivity passes | Contributions reconstruct raw log-odds under the selected setup | The model is correct, fair or causally explained |
+| Most small amount edits leave probability unchanged | Those edits usually stayed within regions with the same calibrated output | Amount is irrelevant or the model is globally robust |
+
+**Check your understanding:** would lowering the D05 threshold necessarily increase AP? It changes decisions and therefore recall/FPR, but AP is computed from the score ranking across thresholds. Would changing the explanation background necessarily change the model prediction? No: the explanation can change while the predictor stays fixed. These distinctions are more reusable than the exact benchmark numbers.
+
+Before proposing production use, choose a failure budget and a representative population, then use the [production guide](PRODUCTION_TRADEOFFS.md) to design the next evaluation.

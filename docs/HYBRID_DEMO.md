@@ -2,6 +2,36 @@
 
 This capstone connects actual saved D01-D08 artifacts. The default comparison has 32 independently authored synthetic requests, ten pipeline variants, and a live corpus update. Every variant executes every request; rejected and escalated requests remain in the task-success denominator. See [PROGRESS.md](PROGRESS.md) for the current execution status; smoke runs are not a completed benchmark.
 
+## The learning question
+
+Do the component improvements survive contact with an end-to-end task? This capstone teaches how to trace a result through routing, retrieval, generation and execution, and how to decide whether each extra stage earns its complexity.
+
+## The concept: a pipeline has its own objective
+
+A component can be correct on its own benchmark and still be ineffective in a system. A router sends the request to the wrong branch; retrieval returns the wrong API version; a valid query drops one predicate. Any one can prevent the user's intended outcome.
+
+For an illustrative chain of five independent, necessary stages each succeeding with probability 0.95, joint success would be `0.95^5 ≈ 0.774`. Actual pipeline errors are dependent, branches differ and fallback changes the path, so this is a teaching calculation rather than a predictor of the lab's score. It explains why the capstone evaluates whole requests instead of averaging component accuracies.
+
+~~~mermaid
+flowchart TD
+    A["Public request and caller context"] --> B["Screen and authorize"]
+    B --> C["Risk and explanation"]
+    C --> D["Student route with teacher fallback"]
+    D --> E["Retrieve matching version and operation"]
+    E --> F["Reference, query, device or clarification branch"]
+    F --> G["External payload and available semantic checks"]
+    G --> H["Response or simulated action"]
+    H --> J["Hidden evaluator grades complete outcome"]
+~~~
+
+The evaluator's expected answer stays outside the runtime. The runtime may use public checks that would actually be available for a supported request. When wording is outside the typed parser's grammar, it does not get a hidden oracle as a substitute.
+
+### Separate the outcomes
+
+Primary task success answers whether the workflow satisfied the expected request, including appropriate rejection or clarification. Risk quality and attribution coverage are separate: the risk score is informational, so removing it cannot change task success by design. A component ablation with unchanged task score is not proof that its separate purpose has no value.
+
+Fallback also needs context. Teacher use can fall without reducing generated tokens or p95 latency, because student work, repairs and extra stages still take time. Compare total requests, teacher calls, fallback reasons, token counts and elapsed time together.
+
 ## Setup and component selection
 
 Complete the CPU, retrieval, language-model and RLVR walkthroughs first. Install the root, MLX, retrieval and RLVR environments from their separate lockfiles. The integration controller runs in the root environment and starts local JSON-line workers to isolate incompatible Transformers versions. MLX needs Metal access. Retrieval and RL query workers use CPU; the larger teacher uses MLX on this Apple Silicon host.
@@ -65,3 +95,24 @@ For one fresh request, save its public JSON fields without an `expected` key and
 ```
 
 The [comparison UI](COMPARISON_UI.md) provides this same workflow with explicit request context and per-stage evidence. Runtime defaults are chosen from component validation, not from final capstone results. One synthetic, single-host pilot does not establish production quality or precise tail latency. No hosted API fees were incurred; energy and hardware depreciation were not measured.
+
+
+## What was learned, and production tradeoffs
+
+The [recorded hybrid](HYBRID_RESULTS.md) succeeded on 27/32 requests versus 19/32 for the baseline. Teacher usage fell from 93.75% to 43.75%, but p95 latency rose. Replacing the tuned retriever with the untuned one reduced success to 14/32; replacing the RL query model with its SFT initialization left 27/32 unchanged.
+
+These results prioritize further retrieval work and question the marginal value of RL in this specific composition. They do not estimate universal component importance: there are only 32 scenarios, and ablations replace one component inside a fixed surrounding policy.
+
+For production, add a stage only when its measured user outcome or operating benefit warrants the failure paths and maintenance it introduces. Stage traces should make rejection and fallback diagnosable. Circuit breaking, capacity limits, trusted identity, durable action state and deployment rollback would require additional implementation beyond these local workers.
+
+## Try it and reason about the result
+
+1. Inspect `capstone-20`: the query omitted an age condition. Find why the payload gate accepted the shape and why supported public semantic checking was unavailable. Explain what the hidden evaluator could detect that the runtime could not.
+2. Compare `no_router` with `hybrid`. Their task scores match, but teacher usage differs. Explain the useful contribution without claiming an accuracy gain.
+3. Compare screening false rejections with admitted abusive requests. Report both, instead of selecting whichever count makes the screen look better.
+4. Read `knowledge_update.json`. Check that the response changed from `result` to `payload` while component hashes stayed fixed. Identify the knowledge source that changed.
+5. Compare Brier scores only on aligned risk cohorts. Explain why the common all-negative cohort favors a low fixed prior and cannot establish useful discrimination.
+
+Trace [hybrid.py](../src/ml_training/hybrid.py) for orchestration, [hybrid_policy.py](../src/ml_training/hybrid_policy.py) for gates, [hybrid_workers.py](../src/ml_training/hybrid_workers.py) for model execution, and [hybrid_data.py](../src/ml_training/hybrid_data.py) for public versus evaluation-only fields. Then write your own next-step proposal using the [production tradeoff guide](PRODUCTION_TRADEOFFS.md).
+
+For an architectural choice, compare the use/avoid criteria and alternatives for [D09](ARCHITECTURE_DECISION_GUIDE.md#d09--compose-a-workflow-or-agent) in the decision guide.

@@ -1,5 +1,7 @@
 # Observed executable-reward training results
 
+This is a worked negative result for the [RLVR tutorial](RLVR_DEMO.md). Before reading the conclusion, compare three kinds of evidence: actual optimization, available reward contrast, and held-out task success. The experiment can demonstrate the first while failing to improve the third.
+
 The fixed 50-step CPU GRPO pilot completed actual optimizer updates but did not improve held-out accuracy over its SFT initialization. Run: [`local-s41-20261026T180904Z-d20988`](../artifacts/rlvr/local-s41-20261026T180904Z-d20988/run.json). The experiment used one seed on Apple M2 Max with 96 GB RAM. These are synthetic task results, not evidence of general reasoning or self-correction.
 
 ## Quality and inference budgets
@@ -55,3 +57,13 @@ The dedicated resource profile then ran without another model workload. Warm mea
 [Raw resource evidence](../artifacts/validation/rlvr-performance.json) includes outputs, token counts and the environment. Each fresh-process number is one launch-to-exit observation including imports, recursive artifact checksums, model loading and one generation; filesystem caches are uncontrolled. Twelve warm samples do not establish precise tail latency, and the small SFT/RL timing differences do not establish a performance benefit. These CPU measurements are not interchangeable with D02's earlier MLX timings or with four-candidate inference cost.
 
 Keep the SFT checkpoint as the simpler choice for this task. Verifier selection improved generated-test success within its four-sample budget, but added inference work and did not improve the eight independent challenges. The evidence does not justify the extra RL training stage for quality, nor unattended use on arbitrary queries. D09 includes the RL artifact to demonstrate the integration and its ablation, without implying it is superior. No hosted model API was used and local electricity/depreciation costs were not measured.
+
+## How to reason about the negative result
+
+A changed adapter hash answers “did optimization affect stored parameters?” It does not answer “did the useful behavior change?” Here exact paired greedy outputs provide stronger evidence about that second question than training loss alone.
+
+The 48 constant-reward groups explain one plausible constraint on this run's relative reward signal. They do not isolate every cause of the null result: model capacity, prompt coverage, reward design and training budget were not independently swept. Report the observed mechanism and uncertainty together.
+
+**Exercise:** separate the four-candidate improvement into training and inference claims. SFT already reached 94/96 with public verifier selection, so the same RLVR score does not establish an RL gain. The time-matched SFT control also consumed different tokens and steps, so it is a wall-time comparison rather than an equal-information or equal-FLOP comparison.
+
+A useful follow-up would make the training reward informative while preserving an independent final test. “Train longer until the published test improves” would turn that test into a development signal. See the tutorial's exercises for a cleaner design.

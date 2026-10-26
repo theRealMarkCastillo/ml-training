@@ -1,5 +1,7 @@
 # Final code review
 
+This review is also a case study in evaluating the evaluator. The [tutorials](LEARNING_GUIDE.md) depend on trustworthy evidence, and the highest-priority finding below showed how a UI test could accidentally report a saved example as a fresh response. Read the fixes as general lessons about observable behavior, process ownership and reproducible setup.
+
 Reviewed on 2026-10-26 against initial commit `d6d9ba4` on `main`. The scope was the uncommitted demo lab: source, tests, scripts, configuration and documentation. Generated artifacts, binaries and lockfile contents were excluded from the code audit; installed frozen environments were used for validation. Entire CLI was available but had no checkpoint/session record, so intent came from the implementation plan and this task's recorded requirements.
 
 The review found four actionable issues. All are fixed, with no unresolved finding from this review. The review focused on data/evaluation boundaries, runtime guards, process lifecycle, reproducibility and the correctness of validation evidence.
@@ -41,3 +43,11 @@ The parser now matches the complete supported aggregate phrase and accepts only 
 Training weights, decoding settings, datasets and measurement code were not changed. This review reran affected behavior, fresh inference and the evidence audit; it did not repeat training or the lengthy full sampled RL replay. The earlier full replay records remain explicit historical evidence, and all recorded model artifacts still verify. Original experiment files were preserved.
 
 The synthetic-data, single-seed neural, simulator and production limitations in [FINAL_REPORT.md](FINAL_REPORT.md) still apply. Negative experiment findings are retained rather than treated as implementation defects. Source and small fixtures are included in Git; generated data, checkpoints, virtual environments and local validation artifacts are excluded.
+
+## Lessons to carry into your own demo
+
+A checker needs a failure that it can detect. If the UI did nothing after submission, a correct fresh-inference test would fail; matching some old JSON widget was not enough. Binding the output to the new command and input makes that distinction observable.
+
+A timeout needs an ownership boundary. Ending the controller is insufficient when model workers continue holding resources or pipes. A reproduction helper needs a fresh-directory test, because an existing local selection file can conceal missing setup work. A parser needs rejection cases as well as accepted grammar examples, because substring matches can silently ignore a user's negation.
+
+**Exercise:** for each fix, describe a plausible incorrect implementation that should fail its regression test. If your proposed test would still pass that implementation, tighten the observable contract. See [tests/test_ui_evidence.py](../tests/test_ui_evidence.py), [tests/test_processes.py](../tests/test_processes.py), [tests/test_run_selection.py](../tests/test_run_selection.py) and [tests/test_schema_data.py](../tests/test_schema_data.py).

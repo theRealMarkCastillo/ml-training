@@ -1,5 +1,22 @@
 # Reproducing the local demo lab
 
+Reproducibility is itself a lesson: can another environment reconstruct the result, and which parts of the original conditions does that actually test? Start with the [learning guide](LEARNING_GUIDE.md) and one component tutorial before attempting the complete evidence bundle.
+
+## Choose the strength of the check
+
+| Check | What you learn | What it does not establish |
+| --- | --- | --- |
+| Contract tests | Specified data, parser, gate and artifact invariants hold on the tested fixtures | Model quality |
+| Smoke training | The small workflow can create and reload an artifact | Full-budget effectiveness |
+| Artifact hash verification | Recorded files have not changed | Correctness or trustworthy provenance by itself |
+| Saved-model replay | The installed environment reproduces recorded inference and metrics | A new training run will converge to the same model |
+| Independent retraining | Training variability under the chosen seeds/settings | Transfer to new populations or hardware |
+| Target deployment experiment | Behavior under specified real constraints | Reliability outside the evaluated conditions |
+
+The recorded lab completed tests and saved-model replays; neural independent retraining and production deployment remain follow-up work. Reproduction commands below can perform substantial computation. Read the relevant tutorial's workload and hardware notes first.
+
+## Recorded environment and scope
+
 The observed host is an Apple M2 Max with 96 GB RAM, macOS arm64 and Python 3.12.13. The completed checks use a second installation of each relevant environment from its lockfile. They reload saved artifacts and regenerate outputs. They are not independent retraining replications, clean operating-system installs, cold filesystem-cache tests or cross-hardware benchmarks. All required replay and profile checks passed; [PROGRESS.md](PROGRESS.md) and [CONFORMANCE.md](CONFORMANCE.md) record the evidence.
 
 ## Install separate environments
@@ -53,7 +70,7 @@ After creating all eight seed-41 local runs and the additional CPU runs, explici
   --fast-classifier-43 artifacts/fast_classifier/<seed-43-run>
 ```
 
-The four extra CPU flags are optional for a seed-41-only hybrid walkthrough, but required to build a complete final-audit selection from a fresh checkout. Existing selections for other seeds are preserved. The supplied evidence bundle already has these selections under `artifacts/validation/selected_*.json`. Replaying it requires the referenced local artifacts and pinned cached base models. The hybrid's bindings contain absolute paths to this checkout; moving the bundle requires creating a new comparison with selectors for the new location. Do not silently edit an already hashed run's bindings.
+The four extra CPU flags are optional for a seed-41-only hybrid walkthrough, but required to build a complete final-audit selection from a fresh checkout. Existing selections for other seeds are preserved. The original development machine's local evidence bundle already has these selections under `artifacts/validation/selected_*.json`. Replaying it requires the referenced local artifacts and pinned cached base models. The hybrid's bindings contain absolute paths to this checkout; moving the bundle requires creating a new comparison with selectors for the new location. Do not silently edit an already hashed run's bindings.
 
 ## Replay the measured tracks
 

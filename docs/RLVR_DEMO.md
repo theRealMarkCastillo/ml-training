@@ -2,6 +2,47 @@
 
 Status: the full 50-step CPU pilot completed actual GRPO updates, checkpoint reload, hidden evaluation and a matched-time SFT control. It did not improve held-out accuracy over SFT; see [observed results](RLVR_RESULTS.md). Clean-environment exact-output replay and the separate latency/startup profile passed; [PROGRESS.md](PROGRESS.md) records the overall lab status.
 
+## The learning question
+
+Can executable feedback improve a model that already learned the output format through supervised fine-tuning? By the end of this lesson, you should be able to distinguish “parameters changed,” “training reward was high,” and “held-out behavior improved.” They are separate claims.
+
+Complete [D02](SLM_DEMOS.md#d02-strict-syntax-and-executable-semantics) first. You need its saved SFT artifact and the typed interpreter. This lesson is a bounded query experiment, not a general reasoning curriculum.
+
+## The concept: learn from relative reward
+
+In SFT, each prompt comes with an answer to imitate. In reinforcement learning with verifiable rewards (RLVR), the policy samples candidate answers and a checker assigns rewards. Here reward is binary: the candidate must satisfy the grammar and pass all public execution fixtures.
+
+GRPO compares candidates from the same prompt using relative reward. A simplified advantage is `A_i = (r_i - mean(group_rewards)) / (std(group_rewards) + epsilon)`. It supplies a direction for increasing the likelihood of relatively better samples, within the trainer's policy optimization objective. GRPO was introduced in [DeepSeekMath](https://arxiv.org/abs/2402.03300); the [TRL guide](https://huggingface.co/docs/trl/grpo_trainer) describes its implementation and configuration variants.
+
+The exact loss depends on the trainer version and settings. This lab pins its environment and disables the KL term. The equation above explains the reward signal, not every term of the installed trainer.
+
+Consider three illustrative four-candidate groups:
+
+| Rewards | What the relative signal can say |
+| --- | --- |
+| `[1, 1, 1, 1]` | All sampled candidates passed; reward does not distinguish among them |
+| `[0, 0, 0, 0]` | All failed; reward gives no relative direction toward a better candidate |
+| `[1, 0, 1, 0]` | Passing samples have higher relative advantage than failing samples |
+
+Very easy and very hard prompts can both provide weak contrast under binary rewards. A high mean reward can therefore coexist with little useful group-relative learning.
+
+~~~mermaid
+flowchart TD
+    P["Prompt from training split"] --> S["Sample four candidates"]
+    S --> V["Public grammar and execution verifier"]
+    V --> G["Relative reward within group"]
+    G --> U["Update LoRA policy"]
+    U --> E["Separate held-out and hidden evaluation"]
+~~~
+
+## A verifier is a specification with blind spots
+
+A count query can accidentally agree with the target on an empty table. Random tables and threshold-boundary witnesses reduce that blind spot, but agreement on finite fixtures is still not proof of equivalence for all inputs. Public fixtures supply training/inference feedback; hidden fixtures grade the selected answer later.
+
+This separation also matters for **best-of-N inference**. Generating four candidates and selecting a publicly passing one spends extra inference work. It is not the same intervention as improving the trained policy. Selecting whichever answer passes hidden tests would leak evaluation information unavailable in the deployed decision.
+
+## Run the experiment
+
 Use CPU for the full local profile. The MPS compatibility probe passed, but a longer run emitted Metal command-buffer errors without raising an exception; that run was rejected. The CPU retry preserves the fixed dataset, step budget and hyperparameters. Use the isolated environment because current TRL uses a different Transformers version from the retrieval environment:
 
 ```bash
@@ -35,3 +76,23 @@ environments/rlvr/.venv/bin/ml-demo run rlvr --run-dir artifacts/rlvr/<run> --de
 ```
 
 This is a bounded synthetic experiment. It does not establish general reasoning, useful self-correction, production readiness or superiority over SFT. The independent challenge is small. Runtime validation establishes grammar validity; semantic correctness still requires task specifications and suitable fixture coverage.
+
+
+## What was learned, and production tradeoffs
+
+The [recorded pilot](RLVR_RESULTS.md) performed 50 GRPO updates and changed adapter hashes. Yet only 2/50 sampled groups contained different rewards, and greedy outputs matched the SFT baseline on all 96 test requests. Continued SFT trained for approximately the same wall time also did not establish a useful greedy gain. These observations make a strong lesson about reward saturation after a good SFT initialization; they do not prove that RLVR cannot help other tasks.
+
+Public verifier selection increased SFT/RL success from 89/96 greedy to 94/96 with four candidates. The independent challenge remained 5/8. Report that gain with its inference budget; attributing it to RL training would be incorrect.
+
+Production RLVR is most plausible when task feedback is meaningful, resistant to easy shortcuts, and cheap enough to evaluate many samples. Verifier engineering, sampling and regression evaluation can dominate the effort. If supervised targets are readily available, continued SFT is an essential comparison. If candidates are already good, inference-time checking may be the simpler first experiment. This lab's measurements support retaining SFT for the demonstrated task.
+
+## Try it and reason about the result
+
+1. Inspect `grpo_training.json` and the raw reward groups. Count constant groups, then compare that count with held-out quality. Explain why a 0.99 mean reward was not evidence of improvement here.
+2. Compare SFT, RLVR and continued SFT at greedy decoding, then compare all three with four-candidate selection. Keep training intervention and inference budget separate.
+3. Read the public-only candidate-selection test. Construct a candidate that passes a weak public fixture but fails a hidden witness; the selector must not use the hidden result to replace its choice.
+4. Propose a more discriminating **training** curriculum containing some solvable and some failing samples. Keep the final test untouched. Do not claim that increasing the step count alone will fix absent reward contrast.
+
+Read [rlvr.py](../src/ml_training/rlvr.py) for reward, control training and evaluation; [rlvr_data.py](../src/ml_training/rlvr_data.py) for disjoint task construction; and [check_rlvr_selection.py](../scripts/check_rlvr_selection.py) for the selection boundary. Current upstream documentation may evolve; the lockfile and saved training record define this experiment.
+
+For an architectural choice, compare the use/avoid criteria and alternatives for [D03](ARCHITECTURE_DECISION_GUIDE.md#d03--learn-from-verifiable-rewards) in the decision guide.

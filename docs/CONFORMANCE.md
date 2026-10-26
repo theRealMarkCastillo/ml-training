@@ -1,5 +1,7 @@
 # Plan-to-evidence audit
 
+Read this map as an example of connecting a claim to evidence. It supports the [tutorial curriculum](LEARNING_GUIDE.md) by showing which implementation and evaluation records justify each original requirement. Conformance to the lab specification is narrower than usefulness in a deployed product.
+
 Audited against the original completion contract on 2026-10-26. Scope remains eight source use cases plus the hybrid capstone. This file maps requirements to observed evidence; it does not replace the raw artifacts. All required checks passed, including D03 replay/profile, the paired D06 batch supplement and the final automated audit. The raw audit is `artifacts/validation/final-audit.json`.
 
 ## Shared requirements
@@ -44,3 +46,9 @@ Audited against the original completion contract on 2026-10-26. Scope remains ei
 | Final report separates positive/negative results and simulation boundaries | Met; [FINAL_REPORT.md](FINAL_REPORT.md) was reviewed against actual replay/profile results and all eight passed final-audit groups. |
 
 Optional hosted teachers, Linux/CUDA deployment, arbitrary-code execution and a self-correction repair study were not needed for the implemented local scope. No physical device, real customer data or production service was used. Source and small fixtures are versioned; generated artifacts remain local.
+
+## Learning exercise: audit a claim
+
+Pick one claim, such as “the model runs offline” or “the explanation is additive.” Find its exact validator, measured artifact and limitation. Ask whether the evidence would still pass if the model returned a wrong but valid answer. This separates an execution property from task correctness.
+
+Then choose a production claim that is absent here, such as a service SLO under peak traffic. List the additional workload, measurement and acceptance criterion needed to test it. Do not infer it from a nearby local timing or a passing contract test.

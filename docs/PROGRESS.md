@@ -1,5 +1,7 @@
 # Implementation Progress
 
+This is the execution record for the learning lab. Use it to practice distinguishing implemented code, completed training, evaluated behavior and reproduced artifacts. For the tutorial reading order, start with [LEARNING_GUIDE.md](LEARNING_GUIDE.md). Dates and counts below describe the recorded implementation; they are not live status for a reader's new checkout.
+
 Updated: 2026-10-26. P0–P6 are complete and the final evidence audit passed.
 
 All eight source-category experiments and the D09 capstone have actual evaluated local runs. Saved-artifact reproduction passed in separate locked environments for every track. The D03 warm/cold resource profile, paired native/ONNX batch measurements and exact explanation-sensitivity replay also passed. [FINAL_REPORT.md](FINAL_REPORT.md) summarizes the observed results and their limits.
@@ -49,3 +51,9 @@ The selectors under `artifacts/validation/selected_*.json` identify exact comple
 The final review retained the original acceptance criteria, checked local documentation links, and confirmed that results and limitations agree with the recorded measurements. There is no required implementation or validation work left in the agreed educational scope. New real-data evaluation, independent neural retraining and production deployment would be separate work.
 
 The subsequent [code review](CODE_REVIEW.md) corrected four implementation/validation issues and added 16 regressions. All 94 tests, seven actual fresh forms, nine artifact views and the eight audit groups passed afterward. Corrected UI checks capture the submitted request's CLI response; four old evidence records that had selected saved examples are retained in `artifacts/validation/pre-review/`. Frozen model results and all 1,360 parser comparison cases remain unchanged.
+
+## What progress means in an ML project
+
+A completed training job is not yet an evaluated model, and a reproduced evaluation is not yet a production result. Follow one row in this tracker into its result chapter and identify the evidence for each transition. For a failed run, identify whether the problem was environment compatibility, execution, validation or task quality.
+
+The educational revision adds conceptual foundations, exercises and production reasoning around the preserved experiment records. Proposed extensions in those lessons remain exercises until separately executed and measured.

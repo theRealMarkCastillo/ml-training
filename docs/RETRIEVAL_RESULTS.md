@@ -1,5 +1,7 @@
 # Retrieval experiment results
 
+Use this chapter with the [retrieval tutorial](RETRIEVAL_DEMO.md) to practice reading a factorial comparison. Ask which rows share a candidate pool before attributing an improvement to the reranker. “The reranker improved” and “the reranked pipeline lost” can both be accurate statements.
+
 Observed on 2026-10-26, using Apple M2 Max MPS, float32, one training seed (41). D08 has actual trained bi-encoder and cross-encoder artifacts. [PROGRESS.md](PROGRESS.md) records the overall lab status.
 
 ## Main finding
@@ -63,3 +65,16 @@ Fresh-process first inference took 3.27 seconds for the bi-encoder and 3.50 seco
 - [Walkthrough and commands](RETRIEVAL_DEMO.md).
 
 This is a single-seed experiment on generated API documentation with only six held-out resource families. The data generator shares a simple API contract across families, so the result demonstrates learning that narrow contract; it does not establish effectiveness on arbitrary enterprise search. No model was retuned after test results were opened. The other tracks and the comparison interface have their own evidence; [PROGRESS.md](PROGRESS.md) records their current status.
+
+## Read the ablations as an argument
+
+1. `base_bi` versus `tuned_bi` tests the trained retriever with the same retrieval role.
+2. `fixed_base_pool_base_cross` versus `fixed_base_pool_tuned_cross` holds the shortlist fixed and tests reranker tuning.
+3. `tuned_bi` versus `tuned_bi_tuned_cross` tests whether the added stage improves the already strong first-stage ranking.
+4. Challenge queries probe separately authored wording, but twelve examples cannot support a broad reliability estimate.
+
+These comparisons prevent a common attribution error: crediting the reranker for candidates the retriever newly found, or condemning reranker training because its stage was unnecessary in the strongest full pipeline.
+
+**Exercise:** explain why a reranker could improve MRR while Recall@10 stays constant. The relevant page can move upward within an unchanged ten-document set. Then explain why adding the reranker here can reduce top-1: a model may move a near-duplicate wrong version or operation above a correct first result.
+
+The production decision is incremental quality at a given latency and maintenance cost. This lab selected the simpler tuned bi-encoder on validation and retained the losing reranker results as evidence.

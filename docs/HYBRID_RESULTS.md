@@ -1,5 +1,7 @@
 # Observed hybrid comparison
 
+Read this capstone case study after the [hybrid tutorial](HYBRID_DEMO.md). Your task is to distinguish end-to-end outcome, component contribution, resource use and population effects. The comparison intentionally retains failures and negative ablations so it can teach those distinctions.
+
 The actual hybrid completed **27 of 32 requests**, compared with **19 of 32** for the no-training baseline. It used the larger teacher on 14/32 requests, and its measured p95 latency was higher. The strongest measured component contribution was version-aware retrieval; adding RL to the query generator did not change overall success in this pilot.
 
 Run: [`local-s41-20261026T185159Z-d063af`](../artifacts/hybrid/local-s41-20261026T185159Z-d063af/run.json). All ten variants executed the same 32 frozen synthetic requests, for 320 actual end-to-end executions, followed by a live corpus edit and regenerated response. This is a single-host integration experiment, not a customer benchmark or production release. Clean-worker replay passed for all 320 executions and the live document update: raw generated text, probabilities, retrieval rankings, decisions and grades matched exactly, excluding nondeterministic timings/RSS. Evidence is in `artifacts/validation/hybrid.json`. Final UI checks are tracked in [PROGRESS.md](PROGRESS.md).
@@ -51,3 +53,15 @@ Shared worker/model initialization and warmup took 12.74 seconds. The warm compa
 During hybrid execution the language worker's cumulative peak RSS was approximately 12.02 GB, the RL worker's 5.55 GB and the retrieval worker's 0.724 GB. Multiple component keys reference the same language process; do not sum those duplicated entries. These workers keep models for all ablations loaded, so these values are not isolated deployable per-variant footprints. Controller memory and initialization are separately recorded in the manifest/startup file.
 
 No hosted API was called. Local electricity and hardware depreciation were not measured. Teacher invocation rate, generated tokens and per-stage elapsed time are resource observations, not dollar-cost estimates. The observed 43.75% teacher usage provides no support for the source PDF's illustrative low fallback fraction on this task.
+
+## Draw a system-level conclusion
+
+The hybrid's improvement is 8 additional correct outcomes on these same 32 scenarios. That paired denominator makes the comparison interpretable, while the small synthetic scenario set limits generalization. The false rejections and valid-but-wrong actions show what the aggregate hides.
+
+Ablations reveal several different forms of contribution. Retrieval changes task success. Routing reduces teacher usage at the same observed task score. Risk and attribution serve separate informational purposes. RL produces no measured incremental task benefit here. An unchanged aggregate does not prove all individual outputs or downstream purposes are equivalent.
+
+**Exercise:** the untuned-retriever variant is faster and less successful. Explain why selecting it solely on latency would reward early failure. Then compare the baseline's zero fallback rate with its 93.75% teacher usage: a teacher used as the primary model is not counted as a fallback.
+
+**Exercise:** explain why the all-negative common risk cohort makes a low fixed prior look strong under Brier score. The result is informative about this cohort, but cannot establish whether the model ranks actual positives well. Use the separate D05 evaluation for that question.
+
+A production proposal should name the intended user outcome, the stage being justified, its incremental benefit and its observed failure mode. The [production tradeoff guide](PRODUCTION_TRADEOFFS.md) gives a worked next-step decision using these results.

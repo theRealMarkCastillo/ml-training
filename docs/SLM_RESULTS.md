@@ -1,5 +1,7 @@
 # Observed local language-model results
 
+Read this as three worked examples alongside the [language-model tutorials](SLM_DEMOS.md). For each table, identify what the metric requires, how the model was selected, and which failures remain invisible in the highest headline score. The original measurements and failed runs are preserved.
+
 Measured on 2026-10-26 on Apple M2 Max, 96 GB RAM. These are synthetic, single-seed pilot experiments. Smoke results are separate and do not establish held-out performance.
 
 ## D01: strong template result, weak challenge generalization
@@ -90,3 +92,19 @@ Fresh processes measured the following launch-to-exit times, including imports, 
 | D04 quantized | 1.755 | 0.678 |
 
 `artifacts/validation/edge-offline.json` records a separate fresh process run under macOS `sandbox-exec` with `(deny network*)`. A TCP connect attempt to loopback returned an OS permission denial, after which the actual quantized device model loaded and generated new predictions for the first request and all ten independent challenge cases. The challenge remained 6/10. This proves local execution in that observed blocked-network process; it does not prove semantic safety, performance on other edge hardware or that a cached replay is acceptable.
+
+## What these comparisons teach
+
+The recurring lesson is that customization changes a bounded distribution of behavior. It does not erase the distinction between familiar templates, independent wording, valid structure and intended action.
+
+| Lesson | Evidence to connect | Engineering implication |
+| --- | --- | --- |
+| D01 distillation | 100% generated-test joint accuracy; 6/12 independent challenges; no successful escalation challenge | Include ambiguity and abstention in development/evaluation, rather than promoting solely on template accuracy |
+| D02 structured output | JSON parsing, schema validity and execution correctness differ | Maintain separate syntactic and semantic checks and count invalid outputs as failures |
+| D04 local inference | Smaller weights and blocked-network execution coexist with unintended valid commands | Evaluate compactness, local availability and intent fidelity separately |
+
+**Reason through the validation reversal:** the quantized D04 model did better on final test than the adapter, while validation selected the adapter. Changing selection afterward would use the test as validation. The appropriate next experiment is an independently specified replication or additional development study with a new untouched final evaluation.
+
+**Reason through the classical baseline:** D01's simple baseline beat the tuned student on the small independent challenge set. That is a reason to investigate task coverage and failure costs, not a statistically broad claim that classical models are superior to language models.
+
+For production, the question is which behavior your application needs at its operating point. The [tradeoff guide](PRODUCTION_TRADEOFFS.md) connects that decision to data collection, fallback and external execution controls.

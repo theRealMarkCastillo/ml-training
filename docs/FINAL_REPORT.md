@@ -1,8 +1,8 @@
-# ML Training Demo Lab: evidence report
+# What the experiments teach
 
-All eight source categories have actual evaluated local implementations, and the hybrid capstone completed its full comparison. Clean-environment artifact replay passed for every track, the comparison UI passed, and the final evidence audit passed all eight check groups. P0–P6 are complete within the local educational scope. [CONFORMANCE.md](CONFORMANCE.md) maps each original requirement to evidence; [PROGRESS.md](PROGRESS.md) records completion.
+The central lesson is to choose model complexity through a measured comparison. Training helped several narrow synthetic tasks, but additional stages did not consistently improve the complete system. Strong template scores also concealed failures on independently authored language.
 
-The main finding is that training helped several narrow synthetic tasks, while more model stages did not consistently improve the result. The strongest template scores also concealed important failures on independently authored language. The implementation is a reproducible educational lab, not a production service.
+Read this chapter as the curriculum's synthesis after the [learning guide](LEARNING_GUIDE.md) and individual tutorials. It connects each technique to its observed result, the inference that result supports, and the next question a production application would need to answer.
 
 ## Source coverage and findings
 
@@ -21,6 +21,9 @@ The main finding is that training helped several narrow synthetic tasks, while m
 The PDF's first list and later overlapping pipeline examples were mapped to these eight source categories plus the capstone. Its embedded prompts were treated as source material, not instructions. Its illustrative speed, scale and fallback claims were not adopted as acceptance thresholds or presented as observed results.
 
 ## What actually ran
+
+All eight source categories have actual evaluated local implementations, and the hybrid capstone completed its full comparison. Clean-environment artifact replay passed for every track, the comparison UI passed, and the final evidence audit passed all eight check groups. P0–P6 are complete within the local educational scope. [CONFORMANCE.md](CONFORMANCE.md) maps each original requirement to evidence; [PROGRESS.md](PROGRESS.md) records completion.
+
 
 D01 used 2,016 local teacher generations, retaining 1,974 after independent validation, and executed 494 student optimizer steps. D02 executed 500 steps; D04 executed 256 and exported a fused 4-bit model. D03 executed 50 GRPO steps and 290 continued-SFT steps from the identical initial checkpoint/adapter, then evaluated base/SFT/RL/control with matched greedy and four-sample inference budgets. D08 executed 106 bi-encoder and 158 cross-encoder steps, selecting checkpoints using validation before final tests.
 
@@ -46,7 +49,7 @@ The AST interpreter executes only a bounded declarative language. Device command
 
 ## Use the lab
 
-Start with the [implementation plan](IMPLEMENTATION_PLAN.md), [reproduction guide](REPRODUCTION.md) and individual walkthroughs. The [local comparison UI](COMPARISON_UI.md) reads the same artifacts as the CLI, separates saved results from fresh execution, exposes failure examples and supports real model queries, feature edits and hybrid stage traces.
+Start with the [learning guide](LEARNING_GUIDE.md) and an individual tutorial; use the [reproduction guide](REPRODUCTION.md) when running it. The [implementation plan](IMPLEMENTATION_PLAN.md) explains the original experimental design. The [local comparison UI](COMPARISON_UI.md) reads the same artifacts as the CLI, separates saved results from fresh execution, exposes failure examples and supports real model queries, feature edits and hybrid stage traces.
 
 ```bash
 .venv/bin/ml-demo list
@@ -59,3 +62,13 @@ environments/ui/.venv/bin/streamlit run app/main.py \
 Open `http://127.0.0.1:8501`. For a device request, inspect the simulator before/after states. For a query, inspect semantic checks and raw AST. For the hybrid, compare baseline and ablations alongside teacher usage, latency and failed requests. For explanations, edit a held-out row and observe both the recomputed score and contribution changes.
 
 The generated [evidence index](../artifacts/report.md) lists every run with its status and manifest. The [passed final audit](../artifacts/validation/final-audit.json), [requirement checklist](CONFORMANCE.md) and [reproduction guide](REPRODUCTION.md) provide the completion evidence. Completion covers implemented and evaluated demos, including honest negative findings; it does not establish effectiveness on real customer data or production hardware.
+
+## Five ideas to take away
+
+1. **Learning a format is different from learning a task.** D02's parse, schema and semantic scores separate those layers; D04's valid-but-unintended actions show why that distinction matters.
+2. **A useful baseline can be very small.** A typed parser won generated command tasks, a logistic model won classifier validation, and the SFT query model matched RL. Their narrower assumptions should be explicit.
+3. **The evaluation distribution determines the claim.** D01's generated-test success and challenge failures are compatible. D05's changed future FPR exposes a threshold's dependence on the population.
+4. **More computation needs an incremental benefit.** D03 spent training work without a measured gain; D08's extra reranking stage hurt the strongest pipeline; D09's lower teacher usage did not imply lower p95.
+5. **Evidence has a scope.** Export parity, offline execution, additivity and exact replay establish useful engineering properties. None substitutes for representative task evaluation or production operation.
+
+As a final exercise, choose a real application and write a one-page design using the [architecture decision guide and record template](ARCHITECTURE_DECISION_GUIDE.md#write-a-small-architecture-decision-record), then develop its operating consequences with the [production tradeoff guide](PRODUCTION_TRADEOFFS.md). Name the simplest baseline, the failure you expect training to address, your quality and operating budgets, and the evidence that would make you abandon the more complex option. Use the lab's results as examples of reasoning, not as accuracy or latency forecasts for your application.

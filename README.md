@@ -1,43 +1,74 @@
 # ML Training Demo Lab
 
-A local-first set of demos showing when model training and fine-tuning help, how to implement them, and how to measure whether they beat simpler alternatives.
+Learn when to train a model, when a simpler method is enough, and how to tell the difference.
 
-Status: all eight source-category demos and the hybrid capstone are implemented, evaluated and reproduced from saved artifacts in separate locked environments. P0–P6 and the final evidence audit passed, including 94 contract tests, real model updates, offline device inference, ONNX parity, 320 hybrid executions and fresh UI submissions. The results retain negative findings: RLVR did not improve on SFT, reranking reduced the best retrieval pipeline's accuracy, and language models still failed independent challenges.
+This repository is a hands-on tutorial built around eight ML use cases and a hybrid assistant capstone. You will train small models, inspect their failures, reload their saved artifacts, and compare quality with latency and operational complexity. Each lesson connects the underlying theory to runnable code and asks what would have to change before applying the technique in production.
 
-- [Implementation plan](docs/IMPLEMENTATION_PLAN.md): source coverage, architecture, experiments, milestones, and completion criteria.
-- [Progress tracker](docs/PROGRESS.md): execution checklist and evidence requirements.
-- [Final evidence report](docs/FINAL_REPORT.md): observed findings, validation and limits.
-- [Requirement-to-evidence audit](docs/CONFORMANCE.md): every original acceptance criterion.
-- [Final code review](docs/CODE_REVIEW.md): corrected findings and post-review validation.
-- [Reproduction guide](docs/REPRODUCTION.md): pinned environments, training order and artifact replay.
-- [CPU demo walkthrough](docs/CPU_DEMOS.md): setup, training, evaluation, and feature edits.
-- [Observed CPU results](docs/CPU_RESULTS.md): three-seed experiments and clean-environment validation.
-- [Retrieval walkthrough](docs/RETRIEVAL_DEMO.md): separately trained bi-encoder/cross-encoder and interactive search.
-- [Observed retrieval results](docs/RETRIEVAL_RESULTS.md): seven ablations, challenge queries, and reproduced rankings.
-- [Language-model walkthrough](docs/SLM_DEMOS.md): distillation, executable schemas and an offline device simulator; check the progress tracker for completed runs.
-- [Observed language-model results](docs/SLM_RESULTS.md): template accuracy, challenge failures, curation and measured resource tradeoffs.
-- [RLVR walkthrough](docs/RLVR_DEMO.md): actual GRPO trainer and comparison with a control matched by training time.
-- [Observed RLVR results](docs/RLVR_RESULTS.md): changed weights, sparse reward contrast and no held-out quality improvement.
-- [Hybrid walkthrough](docs/HYBRID_DEMO.md): actual baseline, component ablations, runtime guards and dynamic document updates.
-- [Local comparison UI](docs/COMPARISON_UI.md): browse evidence and execute fresh predictions.
+The experiments include useful negative results. The distilled router reached 100% on generated test tickets but only 6/12 on independent challenges. Reinforcement learning changed weights without improving held-out accuracy. A reranker improved a controlled comparison yet hurt the best complete retrieval pipeline. Learning to interpret these outcomes is part of the curriculum.
 
-The lab covers small-model distillation, structured output and DSL tuning, verifiable-reward reinforcement learning, on-device inference, tabular prediction, fast classification, feature attribution, and retrieval fine-tuning. A final hybrid demo connects these techniques to a baseline agent using retrieval and tools.
+## Start here
 
-The source is the six-page PDF **Fine-Tuning and ML Use Cases - Google Gemini**, supplied on October 26, 2026. Its examples inform the scope; its embedded prompts and instructions are source material, not execution instructions. Its performance claims are hypotheses to evaluate.
+Read the [learning guide](docs/LEARNING_GUIDE.md) for prerequisites, evaluation vocabulary and the experiment workflow. Then choose a route:
 
-Quick start (Python 3.12, `uv`, and macOS OpenMP via `brew install libomp`):
+- **Choosing an architecture:** use the [architecture decision guide](docs/ARCHITECTURE_DECISION_GUIDE.md) for use/avoid criteria, alternatives beyond the repo, and a reusable decision record.
+- **First ML project:** start with D05, D06 and D07. These CPU lessons teach prediction, calibration, deployment measurement and explanations without downloading language models.
+- **Language-model customization:** read the shared LoRA background, then work through D01, D02 and D04. Continue to D03 after producing the D02 checkpoint.
+- **Search and assistants:** start with D08. After completing the component lessons, use D09 to investigate whether their gains survive integration.
+- **Read before running:** each results document is a worked case study. Recorded results remain readable in a fresh clone even though the large local artifacts are not included.
 
-```bash
+## The lessons
+
+| Lesson | Question you will investigate | Concepts and experiment | Read the observations |
+| --- | --- | --- | --- |
+| [D01 · Distillation](docs/SLM_DEMOS.md#d01-distillation) | Can a small model imitate a larger model on a bounded task? | Teacher-label curation, supervised fine-tuning, abstention, amortization | [Language-model results](docs/SLM_RESULTS.md) |
+| [D02 · Structured output](docs/SLM_DEMOS.md#d02-strict-syntax-and-executable-semantics) | When is valid JSON still the wrong answer? | Typed query ASTs, executable checks, compositional generalization, parser baseline | [Language-model results](docs/SLM_RESULTS.md) |
+| [D03 · Verifiable rewards](docs/RLVR_DEMO.md) | Does reinforcement learning add anything after SFT? | GRPO, reward contrast, hidden evaluation, compute controls, best-of-N | [RLVR results](docs/RLVR_RESULTS.md) |
+| [D04 · Local inference](docs/SLM_DEMOS.md#d04-local-model-and-simulated-device) | What do quantization and offline execution actually guarantee? | Adapter fusion, 4-bit export, device-command validation, simulator state | [Language-model results](docs/SLM_RESULTS.md) |
+| [D05 · Tabular prediction](docs/CPU_DEMOS.md#d05-learn-a-tabular-risk-function) | Can a useful ranking still produce too many false alarms? | Logistic regression, boosted trees, temporal splits, calibration, drift | [CPU results](docs/CPU_RESULTS.md) |
+| [D06 · Fast classification](docs/CPU_DEMOS.md#d06-export-and-time-a-request-classifier) | How much of service latency belongs to the model? | ONNX export, numerical parity, batching, warm versus startup timing | [CPU results](docs/CPU_RESULTS.md) |
+| [D07 · Explanations](docs/CPU_DEMOS.md#d07-inspect-and-change-an-explanation) | What does a feature contribution explain? | SHAP, log-odds, background data, correlated features, sensitivity | [CPU results](docs/CPU_RESULTS.md) |
+| [D08 · Retrieval](docs/RETRIEVAL_DEMO.md) | Should you tune the retriever, add a reranker, or do both? | Bi-encoders, cross-encoders, hard negatives, candidate recall, ablations | [Retrieval results](docs/RETRIEVAL_RESULTS.md) |
+| [D09 · Hybrid capstone](docs/HYBRID_DEMO.md) | Does a better component make a better system? | Routing, fallback, external gates, end-to-end evaluation, changing knowledge | [Hybrid results](docs/HYBRID_RESULTS.md) |
+
+Every tutorial includes concepts, an implementation walkthrough, observations to inspect, production tradeoffs, and exercises with interpretation guidance. The [architecture decision guide](docs/ARCHITECTURE_DECISION_GUIDE.md) helps you choose an approach; the [production tradeoff guide](docs/PRODUCTION_TRADEOFFS.md) develops its operating consequences.
+
+## Run your first experiment
+
+Run commands from the repository root with Python 3.12 and `uv` installed. On macOS, install OpenMP for XGBoost with `brew install libomp`. Start with the CPU environment:
+
+~~~bash
 uv sync --frozen
 source .venv/bin/activate
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 ml-demo doctor
 ml-demo verify all --profile smoke
-ml-demo train tabular --profile local --seed 41
-ml-demo train fast_classifier --profile local --seed 41
+ml-demo train tabular --profile smoke --seed 41
 ml-demo report all
-```
+~~~
 
-Each training command prints a new artifact directory. Use `ml-demo evaluate <demo> --run-dir <directory>` to reproduce saved metrics. Explain a D05 run with `ml-demo run explainability --source-run <directory> --row-index 7 --set amount=450`. See the walkthrough for benchmark boundaries and all reproduction commands.
+The verification command runs the contract suite; it does not train every model. The small smoke training run checks the workflow. Its metrics are not the full experiment. Open the new run's `report.md` and compare the dummy, logistic and tree models. Then follow the [CPU tutorial](docs/CPU_DEMOS.md) to run the 50,000-event experiment and explain a prediction.
 
-Generated data, model artifacts, and virtual environments stay local and are excluded from Git. Small independent challenge fixtures, source code, tests, documentation, and the dependency lockfile are versionable. Source and small fixtures are versioned; model artifacts remain local. No remote publishing has been performed.
+Training prints a unique directory. Replace placeholders such as `artifacts/tabular/<run>` with that printed path:
+
+~~~bash
+ml-demo evaluate tabular --run-dir artifacts/tabular/<run>
+ml-demo verify tabular --run-dir artifacts/tabular/<run>
+~~~
+
+`evaluate` recomputes saved-model metrics; `verify --run-dir` checks file hashes. They answer different questions. The [reproduction guide](docs/REPRODUCTION.md) explains how to create the separate environments, download pinned models and replay the full lab.
+
+## Explore interactively
+
+The [local comparison UI](docs/COMPARISON_UI.md) turns the saved artifacts into an experiment viewer. Compare baselines, inspect individual failures, try a fresh language-model request, or edit a tabular feature and recompute its explanation.
+
+The UI needs locally generated runs. A fresh clone contains source, tests, small challenge fixtures and dependency locks; it does not include model checkpoints, generated datasets or virtual environments. Links into `artifacts/` in results documents refer to the original local evidence bundle and do not resolve in a fresh clone. Reproduction creates new run directory names; use the paths printed by your commands to inspect your own evidence.
+
+## What the lab establishes
+
+The recorded implementation trained models for seven use cases, recomputed explanations from the saved D05 model for D07, and completed artifact reload and inference replay across all eight tracks. It also ran 320 executions of the ten capstone variants. The post-review validation passed 94 contract tests and seven fresh UI submissions. These records describe the implementation as evaluated on October 26, 2026; they are not a promise that a new machine will reproduce timing or accuracy exactly.
+
+Most data is synthetic. Neural experiments use one training seed; the cheap CPU experiments use three. The observed host was an Apple M2 Max with 96 GB RAM. The MLX lessons require Apple Silicon/Metal in the supplied implementation. CPU lessons provide the smallest starting point; no claim is made that 96 GB is a minimum requirement for every lesson. Physical devices and customer systems are not connected.
+
+Use the [final report](docs/FINAL_REPORT.md) as a synthesis of what was learned. The [implementation plan](docs/IMPLEMENTATION_PLAN.md), [progress record](docs/PROGRESS.md), [conformance map](docs/CONFORMANCE.md) and [code-review case study](docs/CODE_REVIEW.md) explain how the evidence was built and checked.
+
+The scope originated in the supplied six-page PDF **Fine-Tuning and ML Use Cases - Google Gemini**. Its examples supplied questions to test. Its embedded prompts were treated as source material, and its illustrative performance claims were not adopted as measured facts.

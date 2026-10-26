@@ -1,5 +1,7 @@
 # ML Training Demo Lab: Implementation Plan
 
+This document is the engineering design behind the tutorials. New learners should start with the [learning guide](LEARNING_GUIDE.md); return here to see how a broad use case becomes an experiment with a baseline, a data contract and a completion criterion. The original plan and acceptance boundaries are preserved so the measured findings can be judged against what was specified before evaluation.
+
 Created: 2026-10-26. Status: P0–P6 implemented and validated locally. All eight source categories plus the hybrid capstone have evaluated artifacts and clean-environment replay evidence. See [FINAL_REPORT.md](FINAL_REPORT.md), [CONFORMANCE.md](CONFORMANCE.md) and [PROGRESS.md](PROGRESS.md). The scope and completion criteria below remain unchanged.
 
 ## Goal and completion boundary
@@ -222,3 +224,9 @@ Primary documentation checked during planning on 2026-10-26; lock compatible ver
 - [scikit-learn common pitfalls](https://scikit-learn.org/stable/common_pitfalls.html) for train-only preprocessing and leakage prevention.
 - [ONNX Runtime threading](https://onnxruntime.ai/docs/performance/tune-performance/threading.html) for explicit benchmark thread settings.
 - [SHAP TreeExplainer](https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html) for background-data, output-space, and feature-dependence configuration.
+
+## Learning exercise: turn a use case into an experiment
+
+Choose one track and write its hypothesis without naming the model. Define the input, required outcome, simplest baseline, failure cost and held-out population. Then select a training method and explain what evidence would justify its extra complexity.
+
+Compare your proposal with this plan's acceptance criteria. Notice that a real model update and a valid negative result can complete an educational experiment. “The tuned model wins” is a hypothesis to test, not a result to force. Use [PRODUCTION_TRADEOFFS.md](PRODUCTION_TRADEOFFS.md) to extend your proposal beyond the lab's scope.
