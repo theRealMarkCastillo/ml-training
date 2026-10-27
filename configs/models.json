@@ -13,7 +13,7 @@
       "license": "apache-2.0",
       "license_source": "https://huggingface.co/Qwen/Qwen2.5-14B-Instruct"
     },
-    "selection_status": "Actual teacher generation, three MLX task adapters and CPU GRPO completed with saved/reloaded held-out evaluations. Selected runs and quality limitations are recorded in docs/PROGRESS.md; feasibility probes alone are not completion evidence.",
+    "selection_status": "Actual teacher generation, three MLX task adapters and CPU GRPO completed with saved/reloaded held-out evaluations. Selected runs and quality limitations are recorded in docs/project/PROGRESS.md; feasibility probes alone are not completion evidence.",
     "verified_card_date": "2026-10-26"
   },
   "retrieval": {

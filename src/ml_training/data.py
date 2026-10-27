@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 
 NUMERIC = ["amount", "hour_sin", "hour_cos", "failed_auth", "is_foreign",
            "account_age_days", "prior_count_1h", "prior_failure_rate_1h", "prior_mean_amount_1h"]
@@ -115,7 +115,7 @@ def prepare(profile: str, seed: int) -> Path:
             if digest(folder / name) != sha:
                 raise ValueError(f"Frozen dataset modified: {name}")
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     events = generate_events(n, seed)
     events.write_parquet(folder / "events.parquet")
     parts = split_frame(build_features(events))

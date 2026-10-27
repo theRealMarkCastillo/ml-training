@@ -57,6 +57,27 @@ def environment() -> dict:
     }
 
 
+def environments() -> dict:
+    return read_json(ROOT / "configs" / "environments.json")
+
+
+def environment_executable(name: str, executable: str = "python", clean: bool = False) -> Path:
+    """Locate a tool in one of the lab's locked environments, or say how to install it.
+
+    `clean` selects the second `.venv-repro` installation used for replay checks.
+    """
+    config = environments()["environments"]
+    if name not in config:
+        raise ValueError(f"Unknown lab environment {name!r}; choose from {sorted(config)}")
+    venv = ".venv-repro" if clean else ".venv"
+    path = ROOT / config[name]["project"] / venv / "bin" / executable
+    if not path.is_file():
+        command = f"python3 scripts/bootstrap.py{' --repro' if clean else ''} {name}"
+        raise FileNotFoundError(f"The {name} environment ({config[name]['purpose']}) is not installed: "
+                                f"{path.relative_to(ROOT)} is missing. Install it with: {command}")
+    return path
+
+
 def source_identity() -> dict:
     paths = sorted([*ROOT.glob("src/**/*.py"), *ROOT.glob("tests/**/*.py"), *ROOT.glob("scripts/*.py"),
                     *ROOT.glob("configs/*.json"), *ROOT.glob("data/fixtures/*.json"),
@@ -69,6 +90,14 @@ def source_identity() -> dict:
             "files": result,
             "environment_locks": {str(p.relative_to(ROOT)): digest(p) for p in ROOT.glob("environments/*/uv.lock")},
             "lock_sha256": digest(ROOT / "uv.lock") if (ROOT / "uv.lock").exists() else None}
+
+
+def new_dataset_folder(folder: Path) -> None:
+    """Create a generated-dataset folder; explain how to recover from an interrupted prepare."""
+    if folder.exists():
+        raise FileExistsError(f"{folder} exists without manifest.json, so an earlier prepare was interrupted. "
+                              "Delete that folder and rerun; it is regenerated deterministically from the seed.")
+    folder.mkdir(parents=True)
 
 
 def new_run(demo: str, profile: str, seed: int) -> Path:
@@ -94,13 +123,67 @@ def complete_run(run: Path, **evidence) -> None:
     write_json(run / "run.json", manifest)
 
 
+def mark_failed(run: Path, error: BaseException) -> None:
+    """Record an interrupted run so it is never mistaken for one still in progress."""
+    manifest = read_json(run / "run.json")
+    manifest.update(status="failed", error=f"{type(error).__name__}: {error}")
+    write_json(run / "run.json", manifest)
+
+
 def verify_run(run: Path) -> None:
     manifest = read_json(run / "run.json")
     if manifest["status"] not in ("smoke", "evaluated"):
-        raise ValueError(f"Run is incomplete: {run}")
+        raise ValueError(f"Run is incomplete (status {manifest['status']!r}): {run}")
     for name, record in manifest["files"].items():
         if digest(run / name) != record["sha256"]:
-            raise ValueError(f"Artifact checksum mismatch: {name}")
+            raise ValueError(f"Artifact checksum mismatch: {name}. The saved file changed after the run "
+                             "completed, so its recorded results can no longer be trusted.")
+
+
+class ReproductionMismatch(AssertionError):
+    """Checksums passed, so saved artifacts are intact, but recomputed results differ."""
+
+
+def differences(actual, expected, tolerance: float = 0., limit: int = 5) -> list[str]:
+    """Paths where two JSON-like values differ; numbers may differ by at most `tolerance`."""
+    found = []
+    def short(value):
+        text = repr(value)
+        return text if len(text) <= 80 else text[:77] + "..."
+    def walk(a, e, where):
+        if len(found) >= limit:
+            return
+        if isinstance(a, dict) and isinstance(e, dict):
+            for key in sorted(set(a) | set(e), key=str):
+                if key not in a or key not in e:
+                    found.append(f"{where}.{key}: present in only one result")
+                else:
+                    walk(a[key], e[key], f"{where}.{key}")
+        elif isinstance(a, (list, tuple)) and isinstance(e, (list, tuple)):
+            if len(a) != len(e):
+                found.append(f"{where}: length {len(a)} != {len(e)}")
+            for i, (x, y) in enumerate(zip(a, e)):
+                walk(x, y, f"{where}[{i}]")
+        elif (isinstance(a, (int, float)) and isinstance(e, (int, float))
+              and not isinstance(a, bool) and not isinstance(e, bool)):
+            if a != e and not abs(a - e) <= tolerance:
+                found.append(f"{where}: {a!r} != saved {e!r}")
+        elif a != e:
+            found.append(f"{where}: {short(a)} != saved {short(e)}")
+    walk(actual, expected, "result")
+    return found
+
+
+def require_reproduced(actual, expected, label: str, tolerance: float = 0.) -> None:
+    """Raise a mismatch that tells a learner whether to suspect drift or a bug."""
+    found = differences(actual, expected, tolerance)
+    if found:
+        advice = (f"Differences exceed --tolerance {tolerance:g}. " if tolerance else
+                  "Small numeric drift can be accepted with --tolerance, for example 1e-6. ")
+        raise ReproductionMismatch(
+            f"{label} did not reproduce. Artifact checksums passed, so the saved files are intact; the "
+            "recomputation differs, which usually means a different machine, OS or library version. "
+            f"{advice}Generated text must match exactly. First differences: {'; '.join(found)}")
 
 
 def benchmark(fn, warmups: int = 20, samples: int = 200) -> dict:

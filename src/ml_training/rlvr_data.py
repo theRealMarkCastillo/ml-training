@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 from ml_training import schema_data
 from ml_training.query_dsl import equivalent
 
@@ -59,7 +59,7 @@ def prepare(profile, seed, source_run):
     if (folder / "manifest.json").exists():
         load(folder)
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     rows = build(profile, seed, source_rows + source_challenge)
     write_json(folder / "rows.json", rows)
     write_json(folder / "challenge.json", source_challenge)

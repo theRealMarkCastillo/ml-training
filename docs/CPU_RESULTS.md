@@ -35,7 +35,7 @@ Each seed trains logistic and tree models on a separate 50,000-row synthetic dat
 | 42 | logistic | 0.3062 | 1.79e-07 | 0.005377 | 0.426432 | 1.142 |
 | 43 | logistic | 0.3030 | 1.79e-07 | 0.004502 | 0.385930 | 1.190 |
 
-Parity tolerance is 1e-5 on all 10,000 held-out rows. Warm timings use repeated fixed inputs to isolate overhead; they are not production service-level guarantees. Fresh-process timing includes interpreter startup, imports, loading and first inference; OS caches are uncontrolled. HTTP includes serialization, validation and a new loopback connection per request.
+Parity tolerance is 1e-5 on all 10,000 held-out rows. Warm timings use repeated fixed inputs to isolate overhead; they are not production service-level guarantees. Fresh-process timing includes interpreter startup, imports, loading and first inference; OS caches are uncontrolled. The recorded fresh-process figures overstate ONNX startup: the child process imported the training module, so about 1 s of each figure is loading scikit-learn, skl2onnx and polars, which an ONNX scorer does not need. The scorer now imports only onnxruntime, numpy and joblib; a smoke run on the same host measured 0.10 s. Retrain to record comparable figures. HTTP includes serialization, validation and a new loopback connection per request.
 
 A supplemental profile measured both native and ONNX execution on identical inputs at batch sizes 1 and 256, after the other model work stopped. The original run artifacts were preserved. Each pair used 20 warmups and 200 measurements, concurrency 1, single-thread BLAS/OpenMP and one ONNX intra/inter-op thread; preprocessing is included.
 
@@ -72,7 +72,7 @@ The duplicate-feature example produced prediction difference 0 while moving attr
 
 ## Other tracks and retained failures
 
-Later milestones have their own [retrieval results](RETRIEVAL_RESULTS.md), [language-model results](SLM_RESULTS.md), and [comparison UI](COMPARISON_UI.md). [PROGRESS.md](PROGRESS.md) records current completion and reproduction status.
+Later milestones have their own [retrieval results](RETRIEVAL_RESULTS.md), [language-model results](SLM_RESULTS.md), and [comparison UI](COMPARISON_UI.md). [PROGRESS.md](project/PROGRESS.md) records current completion and reproduction status.
 
 The earliest smoke/local tabular attempts failed while writing the final manifest because XGBoost represents missing values with NaN. The serialization fix is in place; those attempts remain explicitly marked failed. A socket-restricted classifier smoke run retains a blocked HTTP measurement. Neither is used in the tables above.
 

@@ -7,7 +7,7 @@ import re
 
 import numpy as np
 
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 from ml_training.query_dsl import InvalidQuery, equivalent, execute, parse, validate
 
 SYSTEM = (
@@ -166,7 +166,7 @@ def prepare(profile, seed):
     if (folder / "manifest.json").exists():
         load(folder)
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     rows = build(profile, seed)
     write_json(folder / "rows.json", rows)
     challenge = read_json(ROOT / "data" / "fixtures" / "schema_challenge.json")

@@ -9,7 +9,7 @@ import time
 
 import numpy as np
 
-from ml_training.common import ROOT, complete_run, digest, new_run, read_json, verify_run, write_json
+from ml_training.common import ROOT, complete_run, digest, environment_executable, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
 from ml_training import hybrid_data as data
 from ml_training import hybrid_policy as policy
 
@@ -18,6 +18,10 @@ VARIANTS = ["baseline", "hybrid", "no_screen", "no_router", "no_retrieval", "no_
 
 
 def bindings(rlvr_run, allow_smoke=False):
+    if not (ROOT / "artifacts/validation/selected_cpu_runs.json").is_file():
+        raise FileNotFoundError("The capstone binds previously trained component runs, and none are selected yet. "
+                                "Run `ml-demo prepare hybrid --auto-select --source-run <D03 run>` to bind the latest "
+                                "evaluated runs, or name each run with scripts/select_component_runs.py.")
     cpu = read_json(ROOT / "artifacts/validation/selected_cpu_runs.json")
     structured = read_json(ROOT / "artifacts/validation/selected_structured_runs.json")
     values = {"distillation":read_json(ROOT / "artifacts/validation/selected_distillation_run.json")["run"],
@@ -38,8 +42,7 @@ def bindings(rlvr_run, allow_smoke=False):
 class Worker:
     def __init__(self, kind, config, log_dir, clean=False):
         environment = {"language":"mlx", "retrieval":"transformers", "rlvr":"rlvr"}[kind]
-        venv = ".venv-repro" if clean else ".venv"
-        python = ROOT / f"environments/{environment}/{venv}/bin/python"
+        python = environment_executable(environment, clean=clean)
         self.log = (log_dir / f"{kind}.log").open("w")
         try:
             self.process = subprocess.Popen([str(python),"-m","ml_training.hybrid_workers",kind,str(config)],
@@ -353,9 +356,7 @@ def run(rlvr_run, profile="local", seed=41):
             synthetic=True,scenario_count=len(scenarios),variants=VARIANTS,actual_model_execution=True,
             teacher_api_charge_usd=0,latency_scope="Warm persistent workers; actual sequential end-to-end requests including IPC and gates; startup separate")
     except BaseException as error:
-        info = read_json(run / "run.json")
-        info.update(status="failed",error=f"{type(error).__name__}: {error}")
-        write_json(run / "run.json",info)
+        mark_failed(run, error)
         raise
     finally:
         if runtime:
@@ -409,7 +410,7 @@ def execution_content(value):
     return value
 
 
-def reevaluate(run, output_dir, clean=False):
+def reevaluate(run, output_dir, clean=False, tolerance=0.):
     verify_run(run)
     info = read_json(run / "run.json")
     folder = ROOT / info["dataset_path"]
@@ -424,8 +425,8 @@ def reevaluate(run, output_dir, clean=False):
     try:
         warmup = runtime.warm()
         selected = runtime.calibrate(calibration)
-        if execution_content(selected) != execution_content(read_json(run / "calibration.json")):
-            raise AssertionError("Routing calibration did not reproduce")
+        require_reproduced(execution_content(selected), execution_content(read_json(run / "calibration.json")),
+                           "D09 routing calibration", tolerance)
         original = {(r["variant"],r["id"]):r for r in read_json(run / "predictions.json")}
         count = 0
         for variant in info["variants"]:
@@ -435,14 +436,14 @@ def reevaluate(run, output_dir, clean=False):
                 result["risk_label"] = int(runtime.parts["test"]["label"][scenario["public"]["transaction_row"]])
                 with (output_dir / "traces.jsonl").open("a") as stream:
                     stream.write(json.dumps(result)+"\n")
-                if execution_content(result) != execution_content(original[(variant,result["id"])]):
-                    raise AssertionError(f"Pipeline output did not reproduce: {variant}/{result['id']}")
+                require_reproduced(execution_content(result), execution_content(original[(variant,result["id"])]),
+                                   f"D09 {variant}/{result['id']} pipeline output", tolerance)
                 count += 1
             print(f"Reproduced D09 {variant}",flush=True)
         update = knowledge_update(runtime,scenarios[0]["public"])
         saved_update = read_json(run / "knowledge_update.json")
-        if execution_content(update) != execution_content({key:saved_update[key] for key in update}):
-            raise AssertionError("Document update did not reproduce")
+        require_reproduced(execution_content(update), execution_content({key:saved_update[key] for key in update}),
+                           "D09 document update", tolerance)
         write_json(output_dir / "knowledge_update.json",update)
         result = {"status":"reproduced","run":str(run),"clean_worker_environments":clean,
                   "actual_executions":count,"exact_content_and_decisions":True,

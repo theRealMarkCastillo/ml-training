@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from ml_training.common import ROOT, read_json, verify_run, write_json
+from ml_training.common import ROOT, environment_executable, read_json, verify_run, write_json
 from ml_training.hybrid import run as run_capstone
 
 parser = argparse.ArgumentParser()
@@ -22,7 +22,7 @@ verify_run(run)
 write_json(ROOT / "artifacts/validation/selected_hybrid_run.json",{"run":str(run.relative_to(ROOT)),"status":"evaluated","reproduction_pending":True})
 destination = ROOT / "artifacts/validation" / f"hybrid-replay-{run.name}"
 started = time.perf_counter()
-subprocess.run([str(ROOT / ".venv-repro/bin/ml-demo"),"evaluate","hybrid","--run-dir",str(run),
+subprocess.run([str(environment_executable("cpu", "ml-demo", clean=True)),"evaluate","hybrid","--run-dir",str(run),
                 "--output-dir",str(destination),"--clean-workers"],check=True,cwd=ROOT)
 result = read_json(destination / "result.json")
 write_json(ROOT / "artifacts/validation/hybrid.json",{"result":result,"elapsed_seconds":time.perf_counter()-started,

@@ -250,4 +250,4 @@ For a **lab-scoped** example: choose D08's tuned bi-encoder without a reranker b
 
 Choose a use case and draft the record above. Then propose the strongest simpler alternative and identify the one experiment most likely to make you switch. If the only justification is that the repository demonstrates your preferred technique, the decision is incomplete.
 
-Use [the production guide](PRODUCTION_TRADEOFFS.md) to develop operational consequences and [the final report](FINAL_REPORT.md) to see how the lab's positive and negative findings constrain conclusions. The alternatives linked here are starting points for comparison, not promises of superiority on your application.
+Use [the production guide](PRODUCTION_TRADEOFFS.md) to develop operational consequences and [the final report](project/FINAL_REPORT.md) to see how the lab's positive and negative findings constrain conclusions. The alternatives linked here are starting points for comparison, not promises of superiority on your application.

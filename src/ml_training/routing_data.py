@@ -6,7 +6,7 @@ import re
 from sklearn.metrics import f1_score
 import numpy as np
 
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 
 INTENTS = ["billing", "access", "incident", "device", "query", "escalate"]
 SYSTEM = (
@@ -127,7 +127,7 @@ def prepare(profile, seed):
     if (folder / "manifest.json").exists():
         load(folder)
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     rows = build(profile)
     write_json(folder / "rows.json", rows)
     challenge = read_json(ROOT / "data" / "fixtures" / "routing_challenge.json")

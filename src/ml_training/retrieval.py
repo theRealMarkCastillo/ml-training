@@ -12,7 +12,7 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 import torch
 
-from ml_training.common import ROOT, benchmark, complete_run, digest, new_run, read_json, verify_run, write_json
+from ml_training.common import ROOT, benchmark, complete_run, digest, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
 from ml_training import retrieval_data as data
 from ml_training.retrieval_metrics import family_bootstrap, metrics, negatives_from_scores, ranking
 from ml_training.retrieval_models import (bi_loss, configure, cross_loss, embed, load_bi, load_cross,
@@ -235,9 +235,7 @@ def train(profile, seed, requested="auto"):
                      evaluation_queries=len(test_queries), challenge_queries=len(challenge),
                      replication="single-seed pilot; no broad superiority claim")
     except BaseException as error:
-        manifest = read_json(run / "run.json")
-        manifest.update(status="failed", error=f"{type(error).__name__}: {error}")
-        write_json(run / "run.json", manifest)
+        mark_failed(run, error)
         raise
     return run
 
@@ -261,7 +259,7 @@ def write_report(run, results, winner, bi, cross, timings):
     (run / "report.md").write_text("\n".join(lines) + "\n")
 
 
-def reevaluate(run: Path, requested="auto"):
+def reevaluate(run: Path, requested="auto", tolerance: float = 0.):
     verify_run(run)
     info = read_json(run / "run.json")
     device = configure(info["seed"], requested)
@@ -278,16 +276,14 @@ def reevaluate(run: Path, requested="auto"):
             raise AssertionError(f"Checkpoint parameter hash mismatch: {kind}")
     actual, predictions, candidates = evaluate_variants(corpus, queries, base_bi, bi, base_cross, cross)
     expected = read_json(run / "metrics.json")
-    for name, values in actual.items():
-        for metric, value in values.items():
-            if not np.isclose(value, expected[name][metric], atol=1e-10, rtol=0):
-                raise AssertionError(f"Metric changed: {name}/{metric}")
     saved = read_json(run / "predictions.json")
-    if [p["ranked_ids"] for p in predictions] != [p["ranked_ids"] for p in saved]:
-        raise AssertionError("Top-10 rankings changed")
+    require_reproduced([p["ranked_ids"] for p in predictions], [p["ranked_ids"] for p in saved], "D08 top-10 rankings")
     original_candidates = np.load(run / "candidate_pools.npz")
     for name, value in candidates.items():
-        np.testing.assert_array_equal(value[:, :10], original_candidates[name][:, :10])
+        require_reproduced(value[:, :10].tolist(), original_candidates[name][:, :10].tolist(), f"D08 {name} candidate pool")
+    # The original check allowed 1e-10 metric noise; keep that as the floor.
+    require_reproduced(actual, {name: {metric: expected[name][metric] for metric in values} for name, values in actual.items()},
+                       "D08 test metrics", max(tolerance, 1e-10))
     return {"status": "reproduced", "run": str(run), "device": device,
             "variants": len(actual), "queries": len(queries), "saved_parameter_hashes": "verified"}
 

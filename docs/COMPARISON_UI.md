@@ -55,4 +55,4 @@ Hash verification checks whether an artifact matches its manifest. It does not c
 
 The post-review checks exercised all nine artifact views and all seven fresh forms using actual saved models. Browser checks also observed the comparison table, a feature edit and a simulator change from 20 to 23 Celsius. Local records live under `artifacts/validation/`, including `ui-browser.json` and the fresh-form reports.
 
-For the validation commands, use [REPRODUCTION.md](REPRODUCTION.md). For why fresh-response capture required a regression fix, read [CODE_REVIEW.md](CODE_REVIEW.md). For the scientific interpretation, use each lesson's result chapter rather than treating a single attractive UI response as the conclusion.
+For the validation commands, use [REPRODUCTION.md](REPRODUCTION.md). For why fresh-response capture required a regression fix, read [CODE_REVIEW.md](project/CODE_REVIEW.md). For the scientific interpretation, use each lesson's result chapter rather than treating a single attractive UI response as the conclusion.

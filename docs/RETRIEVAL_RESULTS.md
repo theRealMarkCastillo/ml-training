@@ -2,7 +2,7 @@
 
 Use this chapter with the [retrieval tutorial](RETRIEVAL_DEMO.md) to practice reading a factorial comparison. Ask which rows share a candidate pool before attributing an improvement to the reranker. “The reranker improved” and “the reranked pipeline lost” can both be accurate statements.
 
-Observed on 2026-10-26, using Apple M2 Max MPS, float32, one training seed (41). D08 has actual trained bi-encoder and cross-encoder artifacts. [PROGRESS.md](PROGRESS.md) records the overall lab status.
+Observed on 2026-10-26, using Apple M2 Max MPS, float32, one training seed (41). D08 has actual trained bi-encoder and cross-encoder artifacts. [PROGRESS.md](project/PROGRESS.md) records the overall lab status.
 
 ## Main finding
 
@@ -64,7 +64,7 @@ Fresh-process first inference took 3.27 seconds for the bi-encoder and 3.50 seco
 - [Clean-environment reproduction](../artifacts/validation/retrieval.json).
 - [Walkthrough and commands](RETRIEVAL_DEMO.md).
 
-This is a single-seed experiment on generated API documentation with only six held-out resource families. The data generator shares a simple API contract across families, so the result demonstrates learning that narrow contract; it does not establish effectiveness on arbitrary enterprise search. No model was retuned after test results were opened. The other tracks and the comparison interface have their own evidence; [PROGRESS.md](PROGRESS.md) records their current status.
+This is a single-seed experiment on generated API documentation with only six held-out resource families. The data generator shares a simple API contract across families, so the result demonstrates learning that narrow contract; it does not establish effectiveness on arbitrary enterprise search. No model was retuned after test results were opened. The other tracks and the comparison interface have their own evidence; [PROGRESS.md](project/PROGRESS.md) records their current status.
 
 ## Read the ablations as an argument
 

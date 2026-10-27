@@ -41,7 +41,7 @@ Installation needs package access. After installation, the supplied cells only r
 
 Three kinds of material appear in the lessons:
 
-1. **Recorded measurements:** exported from the October 26, 2026 evaluated runs. The loader prints source run IDs, recording dates and seeds. They retain the synthetic-data, sample-size and host limitations in the original [results](../docs/FINAL_REPORT.md).
+1. **Recorded measurements:** exported from the October 26, 2026 evaluated runs. The loader prints source run IDs, recording dates and seeds. They retain the synthetic-data, sample-size and host limitations in the original [results](../docs/project/FINAL_REPORT.md).
 2. **Derived visualizations:** recomputed from those recorded numbers. Replotting a metric is not new model inference. An ablation remains descriptive evidence from its original population.
 3. **Illustrative calculations and examples:** new arithmetic scenarios, small AST tables and simulator commands, explicitly labeled in each lesson. Their parameters are assumptions; they do not become measured results because a cell runs.
 

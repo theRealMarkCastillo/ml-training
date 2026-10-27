@@ -3,7 +3,7 @@ import sys
 import pytest
 
 from ml_training.common import digest, read_json, write_json
-from scripts import select_component_runs as selection
+from ml_training import run_selection as selection
 
 
 def runs(root):
@@ -42,3 +42,25 @@ def test_wrong_replication_seed_cannot_partially_replace_selectors(tmp_path,monk
     with pytest.raises(ValueError,match="seed-42"):
         selection.select_runs(paths,extra)
     assert not (tmp_path / "artifacts/validation").exists()
+
+
+def test_auto_select_binds_newest_consistent_runs(tmp_path,monkeypatch):
+    monkeypatch.setattr(selection,"ROOT",tmp_path)
+    def create(demo, stamp, **extra):
+        path = tmp_path / "artifacts" / demo / f"local-s41-{stamp}-abc123"
+        path.mkdir(parents=True)
+        (path / "model.bin").write_bytes(demo.encode())
+        write_json(path / "run.json",{"demo":demo,"profile":"local","status":"evaluated","seed":41,
+                                     "files":{"model.bin":{"sha256":digest(path / "model.bin")}}} | extra)
+        return path
+    paths = {demo:create(demo,"20260101T000000Z") for demo in selection.DEMOS if demo not in ["rlvr","explainability"]}
+    newer_tabular = create("tabular","20260201T000000Z")
+    create("explainability","20260101T000000Z",source_run=str(paths["tabular"].relative_to(tmp_path)),
+           source_manifest_sha256=digest(paths["tabular"] / "run.json"))
+    rlvr = create("rlvr","20260101T000000Z",source_run=str(paths["schema_dsl"]),
+                  source_manifest_sha256=digest(paths["schema_dsl"] / "run.json"))
+    chosen = selection.auto_select()
+    # The explanation's own source wins over a newer, unrelated tabular run.
+    assert chosen["tabular"] == str(paths["tabular"].relative_to(tmp_path)) != str(newer_tabular.relative_to(tmp_path))
+    assert chosen["rlvr"] == str(rlvr.relative_to(tmp_path))
+    assert read_json(tmp_path / "artifacts/validation/selected_cpu_runs.json")["tabular-41"] == chosen["tabular"]

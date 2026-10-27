@@ -8,7 +8,7 @@ import time
 
 import numpy as np
 
-from ml_training.common import ROOT, complete_run, digest, new_run, read_json, verify_run, write_json
+from ml_training.common import ROOT, complete_run, digest, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
 
 
 def task(demo):
@@ -167,7 +167,7 @@ def train(demo, profile, seed):
         write_json(run / "challenge.json", challenges)
         write_json(run / "predictions.json", predictions)
         write_json(run / "failure_examples.json", failures)
-        write_report(run, demo, metrics, challenges, selected)
+        write_report(run, demo, metrics, challenges, selected, sum(bool(r.get("novel_composition")) for r in test))
         complete_run(run, dataset_path=str(folder.relative_to(ROOT)), dataset_sha256=digest(folder / "manifest.json"),
                      model=record(), model_input_hashes={p.name: digest(p) for p in path().glob("*.safetensors")},
                      synthetic=True, selected_variant=selected, optimizer_steps=evidence["optimizer_steps_executed"],
@@ -175,14 +175,12 @@ def train(demo, profile, seed):
                      challenge_examples=len(challenge), replication="single-seed pilot",
                      offline_validation="Separate enforced-network-denial run required" if demo == "edge" else None)
     except BaseException as error:
-        manifest = read_json(run / "run.json")
-        manifest.update(status="failed", error=f"{type(error).__name__}: {error}")
-        write_json(run / "run.json", manifest)
+        mark_failed(run, error)
         raise
     return run
 
 
-def write_report(run, demo, metrics, challenges, selected):
+def write_report(run, demo, metrics, challenges, selected, novel_tests=0):
     lines = [f"# {demo}: Actual local task-adapter comparison", "", f"Validation-selected variant: **{selected}**.", "",
              "| Variant | Schema valid | Semantic/command accuracy |", "| --- | --- | --- |"]
     for variant, result in metrics.items():
@@ -194,7 +192,7 @@ def write_report(run, demo, metrics, challenges, selected):
         lines += ["", "Semantic correctness executes the candidate and oracle AST on randomized, boundary-witness and empty tables. "
                   "The typed-slot baseline is a deterministic parser for the documented bounded language, not constrained neural decoding. "
                   "Its high template accuracy cannot establish general natural-language coverage; the independent challenge includes unsupported wording. "
-                  "A quarter of final test examples combine fields not paired during training."]
+                  f"{novel_tests} of {metrics[selected]['rows']} final test examples combine fields not paired during training."]
     else:
         lines += ["", "Device actions affect a deterministic simulator only. Predictions contain before/after states. "
                   "Range and action validation rejects unsafe payloads independently of model training, but cannot establish that a schema-valid action matches the user's intent. "
@@ -203,7 +201,7 @@ def write_report(run, demo, metrics, challenges, selected):
     (run / "report.md").write_text("\n".join(lines) + "\n")
 
 
-def reevaluate(run):
+def reevaluate(run, tolerance=0.):
     from ml_training.mlx_models import adapter_hash, infer_rows, only_adapter_trainable, release
     verify_run(run)
     info = read_json(run / "run.json")
@@ -231,11 +229,9 @@ def reevaluate(run):
             release()
         for split, part, generated in [("test", test, outputs), ("challenge", challenge, extra)]:
             originals = [p["output"]["text"] for p in saved if p["variant"] == variant and p["split"] == split]
-            if originals != [p["text"] for p in generated]:
-                raise AssertionError(f"Output reproduction mismatch: {variant}/{split}")
+            require_reproduced([p["text"] for p in generated], originals, f"{demo} {variant}/{split} generated text")
             target = expected[variant] if split == "test" else expected_challenge[variant]
-            if data.score(part, generated) != target:
-                raise AssertionError(f"Metric reproduction mismatch: {variant}/{split}")
+            require_reproduced(data.score(part, generated), target, f"{demo} {variant}/{split} metrics", tolerance)
     return {"status": "reproduced", "run": str(run), "variants": list(expected),
             "examples": len(test), "challenge_examples": len(challenge), "exact_outputs_matched": True}
 

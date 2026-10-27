@@ -1,0 +1,15 @@
+{
+  "note": "Each lab environment is a separate uv project with its own lockfile; their Transformers requirements conflict, so they are never merged. Install with scripts/bootstrap.py. Paths are relative to the repository root.",
+  "environments": {
+    "cpu": {"project": ".", "purpose": "D05-D07, the ml-demo CLI, reports and contract tests"},
+    "mlx": {"project": "environments/mlx", "purpose": "D01, D02 and D04 MLX language models (Apple Silicon)"},
+    "transformers": {"project": "environments/transformers", "purpose": "D08 bi-encoder and cross-encoder retrieval"},
+    "rlvr": {"project": "environments/rlvr", "purpose": "D03 TRL GRPO training and PyTorch evaluation"},
+    "ui": {"project": "environments/ui", "purpose": "Streamlit comparison UI"},
+    "notebooks": {"project": "environments/notebooks", "purpose": "Visual Jupyter lessons; no model downloads"}
+  },
+  "demos": {
+    "distillation": "mlx", "schema_dsl": "mlx", "edge": "mlx", "rlvr": "rlvr", "retrieval": "transformers",
+    "tabular": "cpu", "fast_classifier": "cpu", "explainability": "cpu", "hybrid": "cpu"
+  }
+}

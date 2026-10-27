@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 
 SYSTEM = (
     'Convert the request to one compact JSON object with action and args. No prose or markdown. '
@@ -120,7 +120,7 @@ def prepare(profile, seed):
     if (folder / "manifest.json").exists():
         load(folder)
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     rows = build(profile)
     write_json(folder / "rows.json", rows)
     challenge = read_json(ROOT / "data" / "fixtures" / "device_challenge.json")

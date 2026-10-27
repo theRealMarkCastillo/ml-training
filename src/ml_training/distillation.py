@@ -15,7 +15,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
-from ml_training.common import ROOT, complete_run, digest, new_run, read_json, verify_run, write_json
+from ml_training.common import ROOT, complete_run, digest, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
 from ml_training import routing_data as data
 
 
@@ -204,9 +204,7 @@ def train(profile, seed):
                      selected_checkpoint_step=training_evidence["selected_step"], test_examples=len(test),
                      challenge_examples=len(challenge), replication="single-seed pilot")
     except BaseException as error:
-        manifest = read_json(run / "run.json")
-        manifest.update(status="failed", error=f"{type(error).__name__}: {error}")
-        write_json(run / "run.json", manifest)
+        mark_failed(run, error)
         raise
     return run
 
@@ -218,18 +216,21 @@ def write_report(run, results, challenge, winner, curation, costs):
              "| --- | --- | --- | --- | --- | --- |"]
     for name, r in results.items():
         lines.append(f"| {name} | {r['macro_f1']:.4f} | {r['argument_exact_match']:.4f} | {r['schema_validity']:.4f} | {r['joint_accuracy']:.4f} | {r['routing_coverage']:.4f} |")
+    models = read_json(ROOT / "configs" / "models.json")["language_models"]
+    challenge_rows = next(iter(challenge.values()))["rows"]
     lines += ["", "The classical baseline learns TF-IDF/logistic routing and uses a documented regex for account extraction. "
-              "The teacher is a local 14B model, the student a 0.5B model. Student training uses validated teacher final outputs only; "
+              f"The teacher is {models['teacher']['model_id']} and the student {models['student']['model_id']}, both run locally. Student training uses validated teacher final outputs only; "
               "no private reasoning traces or teacher-generated evaluation labels are used. Invalid JSON remains a failure and is not repaired after generation.",
               "", f"Independent challenge metrics:\n```json\n{json.dumps(challenge, indent=2)}\n```",
               "", f"Cost and amortization boundaries:\n```json\n{json.dumps(costs, indent=2)}\n```",
-              "", "All data is synthetic. Test phrasing families and account identifiers are held out. The 12 independent challenge cases include negation, ambiguity and embedded instructions. "
+              "", "All data is synthetic. Test phrasing families and account identifiers are held out. "
+              f"The {challenge_rows} independent challenge cases include negation, ambiguity and embedded instructions. "
               "A high score on templates does not establish robustness on real support traffic. This is one training seed. "
               "Compare benchmarks.json for matched batch-1 validation latencies; batch generation timings in prediction records are not per-request latency."]
     (run / "report.md").write_text("\n".join(lines) + "\n")
 
 
-def reevaluate(run):
+def reevaluate(run, tolerance=0.):
     from ml_training.mlx_models import adapter_hash, infer_rows, load_model, only_adapter_trainable, release
     verify_run(run)
     info = read_json(run / "run.json")
@@ -255,12 +256,11 @@ def reevaluate(run):
             extra = infer_rows(model, tokenizer, challenge, max_tokens=64)
             del model, tokenizer
             release()
-        if data.score(test, outputs) != expected[kind] or data.score(challenge, extra) != expected_challenge[kind]:
-            raise AssertionError(f"D01 reevaluation mismatch: {kind}")
         for split, generated in [("test", outputs), ("challenge", extra)]:
             originals = [p["output"]["text"] for p in saved if p["variant"] == kind and p["split"] == split]
-            if originals != [o["text"] for o in generated]:
-                raise AssertionError(f"D01 output reproduction mismatch: {kind}/{split}")
+            require_reproduced([o["text"] for o in generated], originals, f"D01 {kind}/{split} generated text")
+        require_reproduced(data.score(test, outputs), expected[kind], f"D01 {kind} test metrics", tolerance)
+        require_reproduced(data.score(challenge, extra), expected_challenge[kind], f"D01 {kind} challenge metrics", tolerance)
     return {"status": "reproduced", "run": str(run), "variants": list(expected), "examples": len(test),
             "challenge_examples": len(challenge), "exact_outputs_matched": True}
 

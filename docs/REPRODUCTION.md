@@ -18,13 +18,23 @@ The recorded lab completed tests and saved-model replays; neural independent ret
 
 ## Recorded environment and scope
 
-The observed host is an Apple M2 Max with 96 GB RAM, macOS arm64 and Python 3.12.13. The completed checks use a second installation of each relevant environment from its lockfile. They reload saved artifacts and regenerate outputs. They are not independent retraining replications, clean operating-system installs, cold filesystem-cache tests or cross-hardware benchmarks. All required replay and profile checks passed; [PROGRESS.md](PROGRESS.md) and [CONFORMANCE.md](CONFORMANCE.md) record the evidence.
+The observed host is an Apple M2 Max with 96 GB RAM, macOS arm64 and Python 3.12.13. The completed checks use a second installation of each relevant environment from its lockfile. They reload saved artifacts and regenerate outputs. They are not independent retraining replications, clean operating-system installs, cold filesystem-cache tests or cross-hardware benchmarks. All required replay and profile checks passed; [PROGRESS.md](project/PROGRESS.md) and [CONFORMANCE.md](project/CONFORMANCE.md) record the evidence.
 
 ## Install separate environments
 
 The [visual notebooks](../notebooks/README.md) have an independent, lightweight environment: `uv sync --project environments/notebooks --frozen`. They do not require the model environments or macOS OpenMP below.
 
-For the full lab, install `uv`, Python 3.12 and macOS OpenMP (`brew install libomp`) if absent. Training and UI dependencies are pinned in the root and four environment lockfiles; notebooks have a fifth environment lockfile. Do not combine their current Transformers requirements into one environment.
+For the full lab, install `uv`, Python 3.12 and macOS OpenMP (`brew install libomp`) if absent. Training and UI dependencies are pinned in the root and four environment lockfiles; notebooks have a fifth environment lockfile. Do not combine their current Transformers requirements into one environment. [`configs/environments.json`](../configs/environments.json) lists each environment, its purpose and which lessons use it.
+
+The bootstrap script installs any subset from their lockfiles, and `ml-demo list` shows which are installed:
+
+```bash
+python3 scripts/bootstrap.py                  # all six environments
+python3 scripts/bootstrap.py cpu transformers # only what D05-D08 need
+python3 scripts/bootstrap.py --repro          # the second .venv-repro installation used by replay checks
+```
+
+It runs the same `uv sync` commands as the manual equivalent below:
 
 ```bash
 uv sync --frozen
@@ -73,11 +83,17 @@ After creating all eight seed-41 local runs and the additional CPU runs, explici
   --fast-classifier-43 artifacts/fast_classifier/<seed-43-run>
 ```
 
-The four extra CPU flags are optional for a seed-41-only hybrid walkthrough, but required to build a complete final-audit selection from a fresh checkout. Existing selections for other seeds are preserved. The original development machine's local evidence bundle already has these selections under `artifacts/validation/selected_*.json`. Replaying it requires the referenced local artifacts and pinned cached base models. The hybrid's bindings contain absolute paths to this checkout; moving the bundle requires creating a new comparison with selectors for the new location. Do not silently edit an already hashed run's bindings.
+To bind the newest evaluated seed-41 run of each component instead of naming them, let the CLI choose. It takes D02 from the D03 run's recorded source and D05 from the D07 run's source, includes seed-42/43 CPU runs when present, then applies the same checks:
+
+```bash
+.venv/bin/ml-demo prepare hybrid --auto-select --source-run artifacts/rlvr/<run>
+```
+
+It prints the selected paths. Inspect them before training the capstone. The four extra CPU flags are optional for a seed-41-only hybrid walkthrough, but required to build a complete final-audit selection from a fresh checkout. Existing selections for other seeds are preserved. The original development machine's local evidence bundle already has these selections under `artifacts/validation/selected_*.json`. Replaying it requires the referenced local artifacts and pinned cached base models. The hybrid's bindings contain absolute paths to this checkout; moving the bundle requires creating a new comparison with selectors for the new location. Do not silently edit an already hashed run's bindings.
 
 ## Replay the measured tracks
 
-Use each walkthrough's exact command options. These are the validation entry points:
+Use each walkthrough's exact command options. Replay requires exact agreement by default. A mismatch message says whether the saved files changed (checksum failure) or the recomputation differs (usually a different machine or library version) and names the first differing values. On another host, `ml-demo evaluate <demo> --run-dir <run> --tolerance 1e-6` accepts small numeric drift; generated text must still match exactly. These are the validation entry points:
 
 ```bash
 .venv-repro/bin/python scripts/validate_cpu.py --help

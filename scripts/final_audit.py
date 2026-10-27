@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from ml_training.common import ROOT, digest, read_json, verify_run, write_json
+from ml_training.common import ROOT, digest, environment_executable, read_json, verify_run, write_json
 from ml_training.ui_evidence import validate_submission
 
 validation = ROOT / "artifacts/validation"
@@ -118,7 +118,7 @@ def ui():
 def tests():
     result = subprocess.run([sys.executable,"-m","pytest","-q"],cwd=ROOT,capture_output=True,text=True)
     assert result.returncode==0,result.stdout+result.stderr
-    selection = subprocess.run([str(ROOT / "environments/rlvr/.venv-repro/bin/python"),
+    selection = subprocess.run([str(environment_executable("rlvr", clean=True)),
                                 str(ROOT / "scripts/check_rlvr_selection.py")],cwd=ROOT,capture_output=True,text=True)
     assert selection.returncode==0,selection.stdout+selection.stderr
     return {"stdout":result.stdout,"stderr":result.stderr,"python":sys.executable,
@@ -163,9 +163,9 @@ def explanation_stability():
 
 
 def documents():
-    names = ["IMPLEMENTATION_PLAN.md","CPU_DEMOS.md","CPU_RESULTS.md","RETRIEVAL_DEMO.md","RETRIEVAL_RESULTS.md",
+    names = ["project/IMPLEMENTATION_PLAN.md","CPU_DEMOS.md","CPU_RESULTS.md","RETRIEVAL_DEMO.md","RETRIEVAL_RESULTS.md",
              "SLM_DEMOS.md","SLM_RESULTS.md","RLVR_DEMO.md","RLVR_RESULTS.md","HYBRID_DEMO.md","HYBRID_RESULTS.md",
-             "COMPARISON_UI.md","FINAL_REPORT.md","REPRODUCTION.md","CONFORMANCE.md"]
+             "COMPARISON_UI.md","project/FINAL_REPORT.md","REPRODUCTION.md","project/CONFORMANCE.md"]
     for name in names:
         assert (ROOT / "docs" / name).is_file(),name
     return names

@@ -1,6 +1,6 @@
 # Implementation Progress
 
-This is the execution record for the learning lab. Use it to practice distinguishing implemented code, completed training, evaluated behavior and reproduced artifacts. For the tutorial reading order, start with [LEARNING_GUIDE.md](LEARNING_GUIDE.md). Dates and counts below describe the recorded implementation; they are not live status for a reader's new checkout.
+This is the execution record for the learning lab. Use it to practice distinguishing implemented code, completed training, evaluated behavior and reproduced artifacts. For the tutorial reading order, start with [LEARNING_GUIDE.md](../LEARNING_GUIDE.md). Dates and counts below describe the recorded implementation; they are not live status for a reader's new checkout.
 
 Updated: 2026-10-26. P0–P6 are complete and the final evidence audit passed.
 
@@ -19,19 +19,19 @@ All eight source-category experiments and the D09 capstone have actual evaluated
 
 ## Evidence ledger
 
-The selectors under `artifacts/validation/selected_*.json` identify exact completed runs. [CONFORMANCE.md](CONFORMANCE.md) maps each original requirement to evidence. [REPRODUCTION.md](REPRODUCTION.md) distinguishes artifact replay from retraining.
+The selectors under `artifacts/validation/selected_*.json` identify exact completed runs. [CONFORMANCE.md](CONFORMANCE.md) maps each original requirement to evidence. [REPRODUCTION.md](../REPRODUCTION.md) distinguishes artifact replay from retraining.
 
 | Demo | Observed status | Findings and evidence |
 | --- | --- | --- |
-| D01 distillation | Evaluated and reproduced | 494 optimizer steps; 100% generated-test joint accuracy, 6/12 independent challenges and all four escalation challenges failed. [SLM results](SLM_RESULTS.md). |
-| D02 schema/DSL | Evaluated and reproduced | 500 steps; 90.63% semantic correctness, 62.5% on unseen compositions. Typed baseline wins its bounded grammar but covers only 1/8 challenges. [SLM results](SLM_RESULTS.md). |
-| D03 RLVR | Evaluated, reproduced and profiled | 50 actual GRPO updates, two nonconstant reward groups; no held-out gain over SFT or time-matched control. [RLVR results](RLVR_RESULTS.md). |
-| D04 edge | Evaluated, reproduced and enforced offline | 256 steps and real quantized export; OS-denied networking followed by fresh model inference. Schema-valid wrong intent remains possible. [SLM results](SLM_RESULTS.md). |
-| D05 tabular | Three seeds evaluated and reproduced | XGBoost led AP; future FPR exceeded the validation budget. [CPU results](CPU_RESULTS.md). |
-| D06 classifier | Three seeds evaluated, reproduced and profiled | Actual ONNX parity and localhost HTTP measurements. Native/ONNX batch-1 and batch-256 paired supplement passed. [CPU results](CPU_RESULTS.md). |
-| D07 explanations | Evaluated and reproduced | Additivity on 100 held-out rows; fresh feature edit; correlated-feature example; 196 small edits reproduced exactly in a second environment. [CPU results](CPU_RESULTS.md). |
-| D08 retrieval | Evaluated and reproduced | Both encoders trained; all seven comparisons reproduced. Tuned bi-encoder alone beat the reranked pipeline. [Retrieval results](RETRIEVAL_RESULTS.md). |
-| D09 hybrid | Evaluated and reproduced | All 320 requests and live knowledge update regenerated in clean workers. Hybrid 27/32 versus baseline 19/32, with higher measured p95. [Hybrid results](HYBRID_RESULTS.md). |
+| D01 distillation | Evaluated and reproduced | 494 optimizer steps; 100% generated-test joint accuracy, 6/12 independent challenges and all four escalation challenges failed. [SLM results](../SLM_RESULTS.md). |
+| D02 schema/DSL | Evaluated and reproduced | 500 steps; 90.63% semantic correctness, 62.5% on unseen compositions. Typed baseline wins its bounded grammar but covers only 1/8 challenges. [SLM results](../SLM_RESULTS.md). |
+| D03 RLVR | Evaluated, reproduced and profiled | 50 actual GRPO updates, two nonconstant reward groups; no held-out gain over SFT or time-matched control. [RLVR results](../RLVR_RESULTS.md). |
+| D04 edge | Evaluated, reproduced and enforced offline | 256 steps and real quantized export; OS-denied networking followed by fresh model inference. Schema-valid wrong intent remains possible. [SLM results](../SLM_RESULTS.md). |
+| D05 tabular | Three seeds evaluated and reproduced | XGBoost led AP; future FPR exceeded the validation budget. [CPU results](../CPU_RESULTS.md). |
+| D06 classifier | Three seeds evaluated, reproduced and profiled | Actual ONNX parity and localhost HTTP measurements. Native/ONNX batch-1 and batch-256 paired supplement passed. [CPU results](../CPU_RESULTS.md). |
+| D07 explanations | Evaluated and reproduced | Additivity on 100 held-out rows; fresh feature edit; correlated-feature example; 196 small edits reproduced exactly in a second environment. [CPU results](../CPU_RESULTS.md). |
+| D08 retrieval | Evaluated and reproduced | Both encoders trained; all seven comparisons reproduced. Tuned bi-encoder alone beat the reranked pipeline. [Retrieval results](../RETRIEVAL_RESULTS.md). |
+| D09 hybrid | Evaluated and reproduced | All 320 requests and live knowledge update regenerated in clean workers. Hybrid 27/32 versus baseline 19/32, with higher measured p95. [Hybrid results](../HYBRID_RESULTS.md). |
 
 ## Validation and execution boundaries
 

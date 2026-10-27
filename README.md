@@ -56,7 +56,9 @@ ml-demo evaluate tabular --run-dir artifacts/tabular/<run>
 ml-demo verify tabular --run-dir artifacts/tabular/<run>
 ~~~
 
-`evaluate` recomputes saved-model metrics; `verify --run-dir` checks file hashes. They answer different questions. The [reproduction guide](docs/REPRODUCTION.md) explains how to create the separate environments, download pinned models and replay the full lab.
+`evaluate` recomputes saved-model metrics; `verify --run-dir` checks file hashes. They answer different questions. On a different machine, exact recomputation can drift in the last digits; the error says so, and `--tolerance 1e-6` accepts that drift.
+
+The other lessons run in their own locked environments because their dependencies conflict. `ml-demo list` shows which are installed; `python3 scripts/bootstrap.py <name>` installs one. The [reproduction guide](docs/REPRODUCTION.md) explains how to create the separate environments, download pinned models and replay the full lab.
 
 ## Explore interactively
 
@@ -70,6 +72,6 @@ The recorded implementation trained models for seven use cases, recomputed expla
 
 Most data is synthetic. Neural experiments use one training seed; the cheap CPU experiments use three. The observed host was an Apple M2 Max with 96 GB RAM. The MLX lessons require Apple Silicon/Metal in the supplied implementation. CPU lessons provide the smallest starting point; no claim is made that 96 GB is a minimum requirement for every lesson. Physical devices and customer systems are not connected.
 
-Use the [final report](docs/FINAL_REPORT.md) as a synthesis of what was learned. The [implementation plan](docs/IMPLEMENTATION_PLAN.md), [progress record](docs/PROGRESS.md), [conformance map](docs/CONFORMANCE.md) and [code-review case study](docs/CODE_REVIEW.md) explain how the evidence was built and checked.
+Use the [final report](docs/project/FINAL_REPORT.md) as a synthesis of what was learned. The [implementation plan](docs/project/IMPLEMENTATION_PLAN.md), [progress record](docs/project/PROGRESS.md), [conformance map](docs/project/CONFORMANCE.md) and [code-review case study](docs/project/CODE_REVIEW.md) explain how the evidence was built and checked. These project records live in [docs/project](docs/project/README.md), apart from the lessons.
 
 The scope originated in the supplied six-page PDF **Fine-Tuning and ML Use Cases - Google Gemini**. Its examples supplied questions to test. Its embedded prompts were treated as source material, and its illustrative performance claims were not adopted as measured facts.

@@ -2,7 +2,7 @@
 
 Visual companions: [D09 notebook](../notebooks/D09_hybrid_capstone.ipynb). These plot the recorded evidence and include editable examples without loading models; see the [notebook guide](../notebooks/README.md).
 
-This capstone connects actual saved D01-D08 artifacts. The default comparison has 32 independently authored synthetic requests, ten pipeline variants, and a live corpus update. Every variant executes every request; rejected and escalated requests remain in the task-success denominator. See [PROGRESS.md](PROGRESS.md) for the current execution status; smoke runs are not a completed benchmark.
+This capstone connects actual saved D01-D08 artifacts. The default comparison has 32 independently authored synthetic requests, ten pipeline variants, and a live corpus update. Every variant executes every request; rejected and escalated requests remain in the task-success denominator. See [PROGRESS.md](project/PROGRESS.md) for the current execution status; smoke runs are not a completed benchmark.
 
 ## The learning question
 

@@ -9,7 +9,7 @@ import tempfile
 import pandas as pd
 import streamlit as st
 
-from ml_training.common import ROOT, read_json, verify_run
+from ml_training.common import ROOT, environment_executable, environments, read_json, verify_run
 from ml_training.processes import run_isolated
 
 TRACKS = {
@@ -169,7 +169,7 @@ with try_tab:
                 with tempfile.TemporaryDirectory(prefix="ml-demo-ui-") as temporary:
                     path = Path(temporary) / "request.json"
                     path.write_text(json.dumps(request))
-                    observed = execute_command([str(ROOT / ".venv/bin/ml-demo"),"run","hybrid","--run-dir",str(run),
+                    observed = execute_command([str(environment_executable("cpu", "ml-demo")),"run","hybrid","--run-dir",str(run),
                                                 "--request-json",str(path),"--variant",variant])
                 if observed:
                     response = observed["response"]
@@ -191,7 +191,7 @@ with try_tab:
             amount = st.number_input("Changed amount",0.,100000.,450.)
             submitted = st.form_submit_button("Recompute prediction and explanation")
         if submitted:
-            observed = execute_command([str(ROOT / ".venv/bin/ml-demo"),"run","explainability","--run-dir",str(run),
+            observed = execute_command([str(environment_executable("cpu", "ml-demo")),"run","explainability","--run-dir",str(run),
                                         "--row-index",str(row_index),"--set",f"amount={amount}"])
             if observed:
                 st.caption(observed["note"])
@@ -211,8 +211,7 @@ with try_tab:
             variant = st.selectbox("Variant", variants)
             submitted = st.form_submit_button("Run selected variant")
         if submitted:
-            environment = "transformers" if demo == "retrieval" else "rlvr" if demo == "rlvr" else "mlx"
-            command = [str(ROOT / f"environments/{environment}/.venv/bin/ml-demo"), "run", demo,
+            command = [str(environment_executable(environments()["demos"][demo], "ml-demo")), "run", demo,
                        "--run-dir", str(run), "--query", query, "--variant", variant]
             if demo in ["retrieval", "rlvr"]:
                 command += ["--device", "mps" if demo == "retrieval" else selected.get("device", "cpu")]

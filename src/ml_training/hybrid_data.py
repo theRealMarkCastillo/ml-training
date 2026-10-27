@@ -1,7 +1,7 @@
 """Independent capstone requests, explicit authorization context, and held-out goals."""
 
 import json
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 
 PUBLIC_KEYS = {"id", "text", "version", "resource", "operation", "role", "metadata", "transaction_row", "query_backend"}
 BENIGN = [8., .02, 5., 4., 400., 0., 1., 6.]
@@ -82,7 +82,7 @@ def prepare():
     if (folder / "manifest.json").exists():
         load(folder)
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     write_json(folder / "scenarios.json", build())
     write_json(folder / "calibration.json", calibration())
     write_json(folder / "manifest.json", {"version":"hybrid-v1", "synthetic":True,

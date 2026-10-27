@@ -1,6 +1,7 @@
 """D03 actual TRL GRPO, paired SFT control, and public-versus-hidden verification."""
 
 from collections import Counter
+import importlib.metadata
 import json
 from pathlib import Path
 import random
@@ -13,7 +14,7 @@ import torch
 from datasets import Dataset
 from trl import GRPOConfig, GRPOTrainer
 
-from ml_training.common import ROOT, complete_run, digest, new_run, read_json, verify_run, write_json
+from ml_training.common import ROOT, complete_run, digest, environment_executable, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
 from ml_training import rlvr_data as data
 from ml_training import rlvr_models as models
 
@@ -76,7 +77,7 @@ def train_grpo(run, rows, profile, seed, device):
     after = models.adapter_hash(model)
     model.save_pretrained(run / "rl_adapter")
     write_json(run / "grpo_config.json", config.to_dict())
-    evidence = {"trainer": "trl.GRPOTrainer", "trainer_version": "1.8.0", "optimizer_steps": trainer.state.global_step,
+    evidence = {"trainer": "trl.GRPOTrainer", "trainer_version": importlib.metadata.version("trl"), "optimizer_steps": trainer.state.global_step,
                 "initial_adapter_sha256": before, "final_adapter_sha256": after, "parameters_changed": before != after,
                 "nonconstant_reward_groups": sum(r["reward_std"] > 0 for r in records),
                 "constant_reward_groups": sum(r["reward_std"] == 0 for r in records),
@@ -190,7 +191,7 @@ def train(source_run, profile, seed, device):
     print(f"Run directory: {run}", flush=True)
     try:
         shutil.copyfile(folder / "manifest.json", run / "dataset.json")
-        subprocess.run([str(ROOT / "environments/mlx/.venv/bin/python"), str(ROOT / "scripts/export_sft.py"),
+        subprocess.run([str(environment_executable("mlx")), str(ROOT / "scripts/export_sft.py"),
                         str(source_run.resolve()), str(run / "shared_sft")], check=True)
         grpo = train_grpo(run, training, profile, seed, device)
         control = train_sft_control(run, training, seed, device, grpo["elapsed_training_seconds"])
@@ -220,14 +221,12 @@ def train(source_run, profile, seed, device):
                      real_reward_driven_updates=True, synthetic=True, device=device, optimizer_steps=grpo["optimizer_steps"],
                      test_examples=len(test), challenge_examples=len(challenge), replication="single-seed fixed-budget pilot")
     except BaseException as error:
-        info = read_json(run / "run.json")
-        info.update(status="failed", error=f"{type(error).__name__}: {error}")
-        write_json(run / "run.json", info)
+        mark_failed(run, error)
         raise
     return run
 
 
-def reevaluate(run, device):
+def reevaluate(run, device, tolerance=0.):
     torch.set_num_threads(4)
     verify_run(run)
     info = read_json(run / "run.json")
@@ -239,16 +238,15 @@ def reevaluate(run, device):
     rows, challenge = data.load(folder)
     test = [r for r in rows if r["split"] == "test"]
     metrics, challenges, predictions = evaluate_variants(run, test, challenge, info["seed"], device)
-    if metrics != read_json(run / "metrics.json") or challenges != read_json(run / "challenge.json"):
-        raise AssertionError("RLVR hidden metrics did not reproduce")
     original = read_json(run / "predictions.json")
     for variant, splits in predictions.items():
         for split, modes in splits.items():
             for mode, records in modes.items():
                 current = [[o["text"] for o in r["outputs"]] for r in records]
                 saved = [[o["text"] for o in r["outputs"]] for r in original[variant][split][mode]]
-                if current != saved:
-                    raise AssertionError(f"Sampled outputs differ for {variant}/{split}/{mode}")
+                require_reproduced(current, saved, f"D03 {variant}/{split}/{mode} generated text")
+    require_reproduced(metrics, read_json(run / "metrics.json"), "D03 hidden test metrics", tolerance)
+    require_reproduced(challenges, read_json(run / "challenge.json"), "D03 challenge metrics", tolerance)
     return {"status": "reproduced", "run": str(run), "examples": len(test), "challenge_examples": len(challenge),
             "variants": list(metrics), "exact_outputs_matched": True}
 

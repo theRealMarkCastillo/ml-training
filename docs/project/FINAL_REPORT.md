@@ -2,21 +2,21 @@
 
 The central lesson is to choose model complexity through a measured comparison. Training helped several narrow synthetic tasks, but additional stages did not consistently improve the complete system. Strong template scores also concealed failures on independently authored language.
 
-Read this chapter as the curriculum's synthesis after the [learning guide](LEARNING_GUIDE.md) and individual tutorials. It connects each technique to its observed result, the inference that result supports, and the next question a production application would need to answer.
+Read this chapter as the curriculum's synthesis after the [learning guide](../LEARNING_GUIDE.md) and individual tutorials. It connects each technique to its observed result, the inference that result supports, and the next question a production application would need to answer.
 
 ## Source coverage and findings
 
 | ID | Implemented use case | Observed finding | Evidence |
 | --- | --- | --- | --- |
-| D01 | Actual teacher-label distillation into a 0.5B router | Tuned joint accuracy was 100% on generated tests, but 6/12 on independent challenges; every escalation challenge failed | [SLM results](SLM_RESULTS.md) |
-| D02 | Fine-tuned JSON query AST with bounded execution | Tuned semantic correctness was 90.63%, falling to 62.5% on new compositions; the typed parser won generated tasks but covered only 1/8 challenges | [SLM results](SLM_RESULTS.md) |
-| D03 | Actual TRL GRPO with public execution rewards | Fifty updates changed weights, but only two reward groups varied; held-out accuracy matched SFT and the control trained for the same wall time | [RLVR results](RLVR_RESULTS.md) |
-| D04 | Local device-command adapter and quantized export | Actual offline inference worked under OS-denied networking; schema-valid commands still sometimes misunderstood user intent | [SLM results](SLM_RESULTS.md) |
-| D05 | Tabular anomaly prediction with calibration and drift | XGBoost beat logistic average precision across three seeds, but future FPR rose to 10.3–13.4% from a 5% validation budget | [CPU results](CPU_RESULTS.md) |
-| D06 | Native and ONNX request classifiers plus localhost HTTP | Logistic won validation; parity error stayed below 2.4e-7; measured HTTP p95 was 0.34–0.43 ms at concurrency 1 | [CPU results](CPU_RESULTS.md) |
-| D07 | Actual TreeSHAP and coefficient explanations with feature edits | Additivity passed on 100 held-out rows; 196 small edits reproduced exactly; duplicate predictors illustrated non-unique attribution despite identical predictions | [CPU results](CPU_RESULTS.md) |
-| D08 | Separately trained bi-encoder and cross-encoder | Tuned retrieval reached 99.3% top-1; adding the tuned reranker reduced the best pipeline to 88.9%, despite improving its fixed-pool comparison | [Retrieval results](RETRIEVAL_RESULTS.md) |
-| D09 | No-training baseline, actual hybrid, eight component ablations and live knowledge update | Hybrid solved 27/32 versus baseline 19/32, used the teacher on 43.75% of requests, and had higher measured p95 latency | [Hybrid results](HYBRID_RESULTS.md) |
+| D01 | Actual teacher-label distillation into a 0.5B router | Tuned joint accuracy was 100% on generated tests, but 6/12 on independent challenges; every escalation challenge failed | [SLM results](../SLM_RESULTS.md) |
+| D02 | Fine-tuned JSON query AST with bounded execution | Tuned semantic correctness was 90.63%, falling to 62.5% on new compositions; the typed parser won generated tasks but covered only 1/8 challenges | [SLM results](../SLM_RESULTS.md) |
+| D03 | Actual TRL GRPO with public execution rewards | Fifty updates changed weights, but only two reward groups varied; held-out accuracy matched SFT and the control trained for the same wall time | [RLVR results](../RLVR_RESULTS.md) |
+| D04 | Local device-command adapter and quantized export | Actual offline inference worked under OS-denied networking; schema-valid commands still sometimes misunderstood user intent | [SLM results](../SLM_RESULTS.md) |
+| D05 | Tabular anomaly prediction with calibration and drift | XGBoost beat logistic average precision across three seeds, but future FPR rose to 10.3–13.4% from a 5% validation budget | [CPU results](../CPU_RESULTS.md) |
+| D06 | Native and ONNX request classifiers plus localhost HTTP | Logistic won validation; parity error stayed below 2.4e-7; measured HTTP p95 was 0.34–0.43 ms at concurrency 1 | [CPU results](../CPU_RESULTS.md) |
+| D07 | Actual TreeSHAP and coefficient explanations with feature edits | Additivity passed on 100 held-out rows; 196 small edits reproduced exactly; duplicate predictors illustrated non-unique attribution despite identical predictions | [CPU results](../CPU_RESULTS.md) |
+| D08 | Separately trained bi-encoder and cross-encoder | Tuned retrieval reached 99.3% top-1; adding the tuned reranker reduced the best pipeline to 88.9%, despite improving its fixed-pool comparison | [Retrieval results](../RETRIEVAL_RESULTS.md) |
+| D09 | No-training baseline, actual hybrid, eight component ablations and live knowledge update | Hybrid solved 27/32 versus baseline 19/32, used the teacher on 43.75% of requests, and had higher measured p95 latency | [Hybrid results](../HYBRID_RESULTS.md) |
 
 The PDF's first list and later overlapping pipeline examples were mapped to these eight source categories plus the capstone. Its embedded prompts were treated as source material, not instructions. Its illustrative speed, scale and fallback claims were not adopted as acceptance thresholds or presented as observed results.
 
@@ -33,7 +33,7 @@ Failed and smoke runs remain visible and are excluded from these completion clai
 
 ## Completed validation
 
-The final audit passed selected-artifact/training checks, all-track reproduction, actual hybrid branch coverage, comparison UI checks, 94 contract tests plus the separate public-only RL selection contract, resource profiles, small-perturbation explanation reproduction, and walkthrough/report presence. It verifies that supplemental measurements refer to the selected run hashes. [Machine-readable audit](../artifacts/validation/final-audit.json) retains each result.
+The final audit passed selected-artifact/training checks, all-track reproduction, actual hybrid branch coverage, comparison UI checks, 94 contract tests plus the separate public-only RL selection contract, resource profiles, small-perturbation explanation reproduction, and walkthrough/report presence. It verifies that supplemental measurements refer to the selected run hashes. [Machine-readable audit](../../artifacts/validation/final-audit.json) retains each result.
 
 D03's second locked environment regenerated exact greedy and sampled outputs for all four variants on 96 test tasks and eight challenges. Its dedicated CPU profile then measured warm inference and separate fresh processes. D06's supplemental profile compared native and ONNX execution on identical batch-1 and batch-256 inputs across three seeds, with maximum probability difference 8.94e-8 on those batches. Both backends met the provisional 1 ms batch-1 model-only p95 target. D07's 196 conditional ±1% amount edits reproduced exactly; 83.67% left probability unchanged. These supplements preserve the original frozen experiment artifacts.
 
@@ -49,7 +49,7 @@ The AST interpreter executes only a bounded declarative language. Device command
 
 ## Use the lab
 
-Start with the [learning guide](LEARNING_GUIDE.md) and an individual tutorial; use the [reproduction guide](REPRODUCTION.md) when running it. The [implementation plan](IMPLEMENTATION_PLAN.md) explains the original experimental design. The [local comparison UI](COMPARISON_UI.md) reads the same artifacts as the CLI, separates saved results from fresh execution, exposes failure examples and supports real model queries, feature edits and hybrid stage traces.
+Start with the [learning guide](../LEARNING_GUIDE.md) and an individual tutorial; use the [reproduction guide](../REPRODUCTION.md) when running it. The [implementation plan](IMPLEMENTATION_PLAN.md) explains the original experimental design. The [local comparison UI](../COMPARISON_UI.md) reads the same artifacts as the CLI, separates saved results from fresh execution, exposes failure examples and supports real model queries, feature edits and hybrid stage traces.
 
 ```bash
 .venv/bin/ml-demo list
@@ -61,7 +61,7 @@ environments/ui/.venv/bin/streamlit run app/main.py \
 
 Open `http://127.0.0.1:8501`. For a device request, inspect the simulator before/after states. For a query, inspect semantic checks and raw AST. For the hybrid, compare baseline and ablations alongside teacher usage, latency and failed requests. For explanations, edit a held-out row and observe both the recomputed score and contribution changes.
 
-The generated [evidence index](../artifacts/report.md) lists every run with its status and manifest. The [passed final audit](../artifacts/validation/final-audit.json), [requirement checklist](CONFORMANCE.md) and [reproduction guide](REPRODUCTION.md) provide the completion evidence. Completion covers implemented and evaluated demos, including honest negative findings; it does not establish effectiveness on real customer data or production hardware.
+The generated [evidence index](../../artifacts/report.md) lists every run with its status and manifest. The [passed final audit](../../artifacts/validation/final-audit.json), [requirement checklist](CONFORMANCE.md) and [reproduction guide](../REPRODUCTION.md) provide the completion evidence. Completion covers implemented and evaluated demos, including honest negative findings; it does not establish effectiveness on real customer data or production hardware.
 
 ## Five ideas to take away
 
@@ -71,4 +71,4 @@ The generated [evidence index](../artifacts/report.md) lists every run with its 
 4. **More computation needs an incremental benefit.** D03 spent training work without a measured gain; D08's extra reranking stage hurt the strongest pipeline; D09's lower teacher usage did not imply lower p95.
 5. **Evidence has a scope.** Export parity, offline execution, additivity and exact replay establish useful engineering properties. None substitutes for representative task evaluation or production operation.
 
-As a final exercise, choose a real application and write a one-page design using the [architecture decision guide and record template](ARCHITECTURE_DECISION_GUIDE.md#write-a-small-architecture-decision-record), then develop its operating consequences with the [production tradeoff guide](PRODUCTION_TRADEOFFS.md). Name the simplest baseline, the failure you expect training to address, your quality and operating budgets, and the evidence that would make you abandon the more complex option. Use the lab's results as examples of reasoning, not as accuracy or latency forecasts for your application.
+As a final exercise, choose a real application and write a one-page design using the [architecture decision guide and record template](../ARCHITECTURE_DECISION_GUIDE.md#write-a-small-architecture-decision-record), then develop its operating consequences with the [production tradeoff guide](../PRODUCTION_TRADEOFFS.md). Name the simplest baseline, the failure you expect training to address, your quality and operating budgets, and the evidence that would make you abandon the more complex option. Use the lab's results as examples of reasoning, not as accuracy or latency forecasts for your application.

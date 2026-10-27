@@ -10,7 +10,7 @@ import polars as pl
 import shap
 from xgboost import XGBClassifier
 
-from ml_training.common import ROOT, complete_run, digest, new_run, read_json, verify_run, write_json
+from ml_training.common import ROOT, complete_run, digest, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
 from ml_training.data import FEATURES, NUMERIC, load_parts
 from ml_training.tabular import matrix
 
@@ -103,51 +103,56 @@ def correlated_feature_example(seed):
 
 def run(source: Path, row_index: int = 0, updates: dict | None = None) -> Path:
     info, parts, tree, explainer, names, background_ids = setup(source)
-    result = new_run("explainability", info["profile"], info["seed"])
-    selected = parts["test"].head(100)
-    explanations, values = explain_rows(tree, explainer, names, selected)
-    write_json(result / "explanations.json", explanations)
-    global_attribution = dict(zip(names, np.abs(values).mean(axis=0).tolist()))
-    write_json(result / "global_attribution.json", global_attribution)
+    # Reject bad requests before creating a run directory.
     if not 0 <= row_index < parts["test"].height:
         raise ValueError("Row index is outside held-out data")
     row = parts["test"][row_index:row_index + 1]
     updates = updates if updates is not None else {"amount": float(row["amount"][0] or 30) * 1.01}
     changed = modify_row(row, updates)
-    before, before_values = explain_rows(tree, explainer, names, row)
-    after, after_values = explain_rows(tree, explainer, names, changed)
-    write_json(result / "feature_edit.json", {"row_index": row_index, "updates": updates, "before": before[0], "after": after[0],
-                                             "attribution_l1_change": float(np.abs(before_values - after_values).sum()),
-                                             "note": "Conditional feature edit; causal downstream history is not regenerated."})
-    logistic = joblib.load(source / "logistic.joblib")
-    coefficients = logistic.pipeline.named_steps["model"].coef_[0]
-    write_json(result / "logistic_coefficients.json", {
-        "space": "Uncalibrated log-odds: numeric coefficients per training-standardized unit; categorical indicators from one-hot encoding.",
-        "intercept": float(logistic.pipeline.named_steps["model"].intercept_[0]),
-        "coefficients": dict(zip(names, coefficients.tolist())),
-        "numeric_training_means": dict(zip(NUMERIC, logistic.pipeline.named_steps["preprocess"].named_transformers_["numeric"].named_steps["scale"].mean_.tolist())),
-        "numeric_training_scales": dict(zip(NUMERIC, logistic.pipeline.named_steps["preprocess"].named_transformers_["numeric"].named_steps["scale"].scale_.tolist())),
-    })
-    write_json(result / "correlated_features.json", correlated_feature_example(info["seed"]))
-    max_error = max(e["reconstruction_abs_error"] for e in explanations)
-    (result / "report.md").write_text(
-        f"# D07: Explaining actual D05 predictions\n\nSource run: `{source.name}`. Explained {len(explanations)} held-out rows. "
-        f"Maximum additivity residual: {max_error:.3g} (tolerance 1e-5).\n\n"
-        "TreeSHAP uses interventional perturbation with 100 training background rows and raw log-odds output. "
-        "Contributions reconstruct the uncalibrated model margin, not calibrated probability. Both probabilities are shown separately. "
-        "Global importance is the mean absolute contribution over these 100 rows, not the whole population.\n\n"
-        "`feature_edit.json` compares a selected held-out row before and after an allowed edit. "
-        "This is a conditional feature edit, not a causal intervention. `logistic_coefficients.json` describes standardized numeric coefficients and category indicators. "
-        "`correlated_features.json` shows two models with duplicate predictors: equivalent predictions can allocate feature credit differently. "
-        "Attributions and reason codes do not establish causality or regulatory compliance.\n")
-    complete_run(result, source_run=str(source.relative_to(ROOT)), source_manifest_sha256=digest(source / "run.json"),
-                 background_event_ids=background_ids, output_space="raw log-odds", perturbation="interventional",
-                 rows_explained=len(explanations), max_additivity_residual=max_error, tolerance=1e-5,
-                 edited_row_index=row_index, updates=updates)
+    result = new_run("explainability", info["profile"], info["seed"])
+    try:
+        selected = parts["test"].head(100)
+        explanations, values = explain_rows(tree, explainer, names, selected)
+        write_json(result / "explanations.json", explanations)
+        global_attribution = dict(zip(names, np.abs(values).mean(axis=0).tolist()))
+        write_json(result / "global_attribution.json", global_attribution)
+        before, before_values = explain_rows(tree, explainer, names, row)
+        after, after_values = explain_rows(tree, explainer, names, changed)
+        write_json(result / "feature_edit.json", {"row_index": row_index, "updates": updates, "before": before[0], "after": after[0],
+                                                 "attribution_l1_change": float(np.abs(before_values - after_values).sum()),
+                                                 "note": "Conditional feature edit; causal downstream history is not regenerated."})
+        logistic = joblib.load(source / "logistic.joblib")
+        coefficients = logistic.pipeline.named_steps["model"].coef_[0]
+        write_json(result / "logistic_coefficients.json", {
+            "space": "Uncalibrated log-odds: numeric coefficients per training-standardized unit; categorical indicators from one-hot encoding.",
+            "intercept": float(logistic.pipeline.named_steps["model"].intercept_[0]),
+            "coefficients": dict(zip(names, coefficients.tolist())),
+            "numeric_training_means": dict(zip(NUMERIC, logistic.pipeline.named_steps["preprocess"].named_transformers_["numeric"].named_steps["scale"].mean_.tolist())),
+            "numeric_training_scales": dict(zip(NUMERIC, logistic.pipeline.named_steps["preprocess"].named_transformers_["numeric"].named_steps["scale"].scale_.tolist())),
+        })
+        write_json(result / "correlated_features.json", correlated_feature_example(info["seed"]))
+        max_error = max(e["reconstruction_abs_error"] for e in explanations)
+        (result / "report.md").write_text(
+            f"# D07: Explaining actual D05 predictions\n\nSource run: `{source.name}`. Explained {len(explanations)} held-out rows. "
+            f"Maximum additivity residual: {max_error:.3g} (tolerance 1e-5).\n\n"
+            f"TreeSHAP uses interventional perturbation with {len(background_ids)} training background rows and raw log-odds output. "
+            "Contributions reconstruct the uncalibrated model margin, not calibrated probability. Both probabilities are shown separately. "
+            f"Global importance is the mean absolute contribution over these {len(explanations)} rows, not the whole population.\n\n"
+            "`feature_edit.json` compares a selected held-out row before and after an allowed edit. "
+            "This is a conditional feature edit, not a causal intervention. `logistic_coefficients.json` describes standardized numeric coefficients and category indicators. "
+            "`correlated_features.json` shows two models with duplicate predictors: equivalent predictions can allocate feature credit differently. "
+            "Attributions and reason codes do not establish causality or regulatory compliance.\n")
+        complete_run(result, source_run=str(source.relative_to(ROOT)), source_manifest_sha256=digest(source / "run.json"),
+                     background_event_ids=background_ids, output_space="raw log-odds", perturbation="interventional",
+                     rows_explained=len(explanations), max_additivity_residual=max_error, tolerance=1e-5,
+                     edited_row_index=row_index, updates=updates)
+    except BaseException as error:
+        mark_failed(result, error)
+        raise
     return result
 
 
-def reevaluate(run: Path) -> dict:
+def reevaluate(run: Path, tolerance: float = 0.) -> dict:
     verify_run(run)
     info = read_json(run / "run.json")
     source = ROOT / info["source_run"]
@@ -156,8 +161,7 @@ def reevaluate(run: Path) -> dict:
     _, parts, tree, explainer, names, _ = setup(source)
     actual, _ = explain_rows(tree, explainer, names, parts["test"].head(info["rows_explained"]))
     expected = read_json(run / "explanations.json")
-    if actual != expected:
-        raise AssertionError("Explanations did not reproduce")
+    require_reproduced(actual, expected, "D07 explanations", tolerance)
     return {"status": "reproduced", "run": str(run), "rows": len(actual)}
 
 

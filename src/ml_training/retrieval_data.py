@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ml_training.common import ROOT, digest, read_json, write_json
+from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 
 RESOURCES = [
     ("support-ticket", "support ticket", "customer case"),
@@ -129,7 +129,7 @@ def prepare(profile: str, seed: int) -> Path:
     if (folder / "manifest.json").exists():
         load(folder)
         return folder
-    folder.mkdir(parents=True, exist_ok=False)
+    new_dataset_folder(folder)
     corpus, queries = build(profile)
     checks = audit(corpus, queries)
     write_json(folder / "corpus.json", corpus)
