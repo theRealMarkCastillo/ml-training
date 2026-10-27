@@ -136,6 +136,18 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv-repro/bin/python scripts/profile_
 
 The classifier profile uses identical fixed inputs for both backends at batch sizes 1 and 256. The explanation study changes amount by ±1% on the first 100 held-out rows, records missing amounts explicitly and requires an exact second-environment replay. See [CPU_DEMOS.md](CPU_DEMOS.md) for interpretation and measurement boundaries.
 
+## Corrections to recorded runs
+
+Recorded runs are hash-locked and are never edited. Where a later review found a flaw in how a run was measured or compared, a supplemental script re-scores the run's saved outputs, first reproducing the recorded figures exactly, and writes a separate file under `artifacts/validation/`. New runs use the corrected behavior and record its version, so older runs still replay as recorded.
+
+```bash
+.venv/bin/python scripts/rescore_typed_slot.py      # D02: parser limited to training wording
+.venv/bin/python scripts/rescore_rlvr_hidden.py     # D03: hidden fixtures disjoint from the reward (v2)
+OMP_NUM_THREADS=1 .venv/bin/python scripts/profile_onnx_startup.py  # D06: fresh-process startup, minimal scorer
+```
+
+The first two are deterministic and run no model; the third is a timing measurement and varies by host. D01 needs no script: its curation log already shows every accepted teacher answer equals the oracle label, and `export_notebook_snapshot.py` records that check. The [results pages](SLM_RESULTS.md) explain what each correction changed.
+
 ## Hybrid, interface and final evidence audit
 
 ```bash

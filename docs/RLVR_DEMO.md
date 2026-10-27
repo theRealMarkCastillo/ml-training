@@ -39,7 +39,7 @@ flowchart TD
 
 ## A verifier is a specification with blind spots
 
-A count query can accidentally agree with the target on an empty table. Random tables and threshold-boundary witnesses reduce that blind spot, but agreement on finite fixtures is still not proof of equivalence for all inputs. Public fixtures supply training/inference feedback; hidden fixtures grade the selected answer later.
+A count query can accidentally agree with the target on an empty table. Random tables and threshold-boundary witnesses reduce that blind spot, but agreement on finite fixtures is still not proof of equivalence for all inputs. Public fixtures supply training/inference feedback; hidden fixtures grade the selected answer later. They should share no table with the reward, or a hidden pass partly repeats the training signal, and they should cover at least the same edge values, or the hidden check is weaker than the reward.
 
 This separation also matters for **best-of-N inference**. Generating four candidates and selecting a publicly passing one spends extra inference work. It is not the same intervention as improving the trained policy. Selecting whichever answer passes hidden tests would leak evaluation information unavailable in the deployed decision.
 
@@ -63,7 +63,7 @@ The real runner uses the supported [TRL GRPOTrainer](https://huggingface.co/docs
 
 There are 500 RL training tasks, 64 reserved validation tasks and 96 final test tasks. Canonical ASTs are disjoint across these partitions and from every D02 source example/challenge. Test phrasing and a 24-example composition slice are held out. The eight D02 independent challenge cases are also excluded from RL training.
 
-The reward is 1 only when a schema-valid candidate passes all public executable fixtures; otherwise it is 0. There is no format bonus, empty-table partial credit or hidden-case access. Hidden evaluation changes the randomized fixture seed and includes boundary witnesses. The AST interpreter bounds source length, nodes, depth and rows and offers no arbitrary-code execution. This bounds work structurally instead of executing untrusted code with a timeout.
+The reward is 1 only when a schema-valid candidate passes all public executable fixtures; otherwise it is 0. There is no format bonus, empty-table partial credit or hidden-case access. Hidden evaluation (fixture version v2) uses three random tables from an unrelated seed and a boundary witness two and three units from each threshold plus both range ends; no hidden table is also a reward table. Runs recorded before v2 used a hidden set that shared its witness and empty tables with the reward; [the results](RLVR_RESULTS.md#quality-and-inference-budgets) show re-grading the recorded run with v2 changed nothing. The AST interpreter bounds source length, nodes, depth and rows and offers no arbitrary-code execution. This bounds work structurally instead of executing untrusted code with a timeout.
 
 The local profile uses 50 actual GRPO optimizer steps, four candidates per prompt, temperature 1, maximum completion length 160, rank-8 LoRA over the last four query/value projection layers, learning rate 2e-5, no KL term and no weight decay. The checkpoint is the final fixed-budget step, with no test-driven selection. Raw groups, rewards, variance, generated token counts, optimizer logs and before/after parameter hashes are retained. A run with no parameter change fails the completion check.
 

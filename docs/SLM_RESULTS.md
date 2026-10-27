@@ -21,6 +21,8 @@ The tuned student met the frozen validation floor and was selected before test e
 
 The teacher generated 2,016 actual responses, of which 1,974 passed the independent synthetic oracle. Forty-two outputs incorrectly routed query requests about billing cases to the billing intent; those outputs remain in the curation log and were excluded. Accepted class counts were 336 for each intent except query, which retained 294. The training set contains repeated scenario families with different identifiers; its size is not evidence of equivalent real-world diversity.
 
+**What the teacher contributed.** A teacher answer was kept only when it exactly matched the synthetic oracle label, so every kept answer *is* the oracle label: the student trained on gold labels, and the teacher chose which examples were used. All 42 removed examples came from one ambiguous template, “List the closed billing cases.”, which the teacher routed to billing. This is why the student (144/144) could beat its teacher (138/144) on generated tests: all six teacher errors were the held-out wording “Give me the IDs of unresolved billing cases.”, the same billing-versus-query ambiguity. Without an oracle, a distillation pipeline trains on the teacher's answers, and the student would inherit that confusion rather than correct it. Read the student's generated-test score as evidence about learning the oracle's labels, not about how far a student can exceed its teacher.
+
 Student training changed 90,112 LoRA parameters over 494 optimizer steps. Validation selected epoch 1 at step 247; epoch 2 tied its 100% validation joint accuracy. The selected adapter was saved and reloaded, and its parameter hash was checked before final evaluation. The full training/validation loop took 120.0 seconds. Teacher batch generation took 1,380.1 seconds and produced 31,001 tokens.
 
 | Variant | Warm validation p50 | Warm validation p95 | Samples |
@@ -44,11 +46,12 @@ Run: [`local-s41-20261026T175054Z-61eada`](../artifacts/schema_dsl/local-s41-202
 | --- | --- | --- | --- | --- |
 | Prompted base | 0% | 0% | 0% | 0/8 |
 | Tuned adapter | 93.13% | 90.63% (145/160) | 62.5% (25/40) | 4/8 |
-| Typed-slot parser | 100% | 100% | 100% | 1/8 |
+| Typed-slot parser, all wordings (as recorded) | 100% | 100% | 100% | 1/8 |
+| Typed-slot parser, training wording only (re-scored) | 0% | 0% | 0% | 1/8 |
 
 The base model failed the strict output contract; outputs are preserved rather than repaired. The tuned model's JSON parse rate was 93.75%, schema validity 93.13%, and execution correctness 90.63%. These are distinct checks. On the challenge, every tuned output parsed as JSON, but only five satisfied the schema and four had correct semantics. Fine-tuning therefore does not remove the need for external validation or semantic checks.
 
-The typed parser uses only the input request and handles the published bounded grammar. It won validation selection and all generated test cases, including novel field combinations. Its poor challenge coverage limits it to an explicit command language. The neural adapter generalized to some independent wording but missed half the small challenge set and struggled with new compositions; neither result establishes broad natural-language reliability.
+The recorded typed parser was written knowing the request wording of every split, including the validation and test phrasing that the models never trained on. Its 100% therefore measures a parser written for exactly that wording, not generalization to new phrasing. It won validation selection on a tie with the tuned adapter, by being faster. Re-scored on the same saved data with only the training wording, as the models had, the parser handles none of the 100 validation or 160 test requests, and the same selection rule picks the tuned adapter. The re-scoring first reproduced the recorded parser metrics exactly; see `artifacts/validation/d02-typed-slot-training-wording.json` and [`scripts/rescore_typed_slot.py`](../scripts/rescore_typed_slot.py). New D02 runs report both versions and select only among variants with training-level information. Rules written for a fixed command language are exact inside it; they do not carry over to new wording. The neural adapter generalized to some independent wording but missed half the small challenge set and struggled with new compositions; neither result establishes broad natural-language reliability.
 
 The full run executed 500 optimizer steps at batch 4 across two epochs. The initial batch-8 run failed with a Metal command-buffer interactivity error before producing a trained checkpoint; it is retained as `local-s41-20261026T174816Z-937c71` with failed status. Retrying at batch 4 completed. This was a hardware-driven change, not test-driven tuning.
 
@@ -100,7 +103,7 @@ The recurring lesson is that customization changes a bounded distribution of beh
 | Lesson | Evidence to connect | Engineering implication |
 | --- | --- | --- |
 | D01 distillation | 100% generated-test joint accuracy; 6/12 independent challenges; no successful escalation challenge | Include ambiguity and abstention in development/evaluation, rather than promoting solely on template accuracy |
-| D02 structured output | JSON parsing, schema validity and execution correctness differ | Maintain separate syntactic and semantic checks and count invalid outputs as failures |
+| D02 structured output | JSON parsing, schema validity and execution correctness differ; the parser's win came from knowing the test wording | Maintain separate syntactic and semantic checks, count invalid outputs as failures, and give baselines the same information as the trained model |
 | D04 local inference | Smaller weights and blocked-network execution coexist with unintended valid commands | Evaluate compactness, local availability and intent fidelity separately |
 
 **Reason through the validation reversal:** the quantized D04 model did better on final test than the adapter, while validation selected the adapter. Changing selection afterward would use the test as validation. The appropriate next experiment is an independently specified replication or additional development study with a new untouched final evaluation.

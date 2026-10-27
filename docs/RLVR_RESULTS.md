@@ -21,6 +21,8 @@ The untuned base produced no schema-valid candidate in this evaluation. SFT and 
 
 Across all recorded test and challenge candidates, no candidate passed the public fixtures and failed the hidden fixtures. That is an observed count of zero in this bounded evaluation, not proof that the verifier has no exploitable blind spots. A dedicated contract check constructs a public-only passing candidate and confirms that best-of-N cannot secretly replace it using hidden results.
 
+**Checking the checker.** In this recorded run, the hidden grading (v1) changed only its random table. Its boundary-witness and empty tables were the same ones the training reward used, so two of its three fixtures repeated the reward. The saved outputs were later re-graded with v2 fixtures that share no table with the reward: three new random tables, plus witnesses at 0, 110 and two and three units either side of each threshold. The re-grading first rebuilt the recorded metrics exactly from the saved outputs, then found the same results for every variant and split, and still no public-pass/hidden-fail candidate among all 2,080 recorded candidates. The conclusions above therefore hold under the stronger check; see `artifacts/validation/rlvr-hidden-v2.json` and [`scripts/rescore_rlvr_hidden.py`](../scripts/rescore_rlvr_hidden.py). Designing v2 also exposed the opposite risk: a first draft tested only near each threshold and passed two recorded candidates with a spurious `amount le 0` clause that v1 caught at 0. Hidden fixtures must differ from the reward without being weaker. New runs record `hidden_fixtures: v2`; replays of older runs use v1.
+
 ## Actual training evidence and the negative result
 
 | Measure | GRPO | Continued SFT control |

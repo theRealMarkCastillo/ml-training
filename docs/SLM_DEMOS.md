@@ -41,7 +41,7 @@ The task trainer uses Adam at 1e-4, batch 8 for routing and batch 4 for schema/d
 
 ### Learn the distinction: distillation versus trusted labels
 
-The goal is to replace repeated large-model routing with a smaller task model. Distillation transfers behavior from a teacher to a student; the [original distillation paper](https://arxiv.org/abs/1503.02531) studies learning from teacher probability information. Here the implementation is **sequence-level teacher-label distillation**: the teacher generates a final JSON answer, an independent check accepts or rejects it, and SFT trains on accepted answer tokens. No teacher logits or hidden states are matched.
+The goal is to replace repeated large-model routing with a smaller task model. Distillation transfers behavior from a teacher to a student; the [original distillation paper](https://arxiv.org/abs/1503.02531) studies learning from teacher probability information. Here the implementation is **sequence-level teacher-label distillation**: the teacher generates a final JSON answer, a check accepts it only if it exactly matches the synthetic oracle label, and SFT trains on accepted answer tokens. No teacher logits or hidden states are matched. Because acceptance requires agreement with the oracle, every training target is a gold label: the teacher decides which examples are used, not what they say. That is a common pattern when a cheap checker exists, but it is not what distillation means when no oracle is available; see [what the teacher contributed](SLM_RESULTS.md#d01-strong-template-result-weak-challenge-generalization).
 
 Consider “The card was charged twice. Account C1234.” Routing needs both a billing intent and an exact account value. Producing JSON is only the format requirement. A ticket involving both billing and an API query may expose a semantic mistake even when every field is valid.
 
@@ -142,13 +142,13 @@ The dataset contains 1,000 training, 100 validation and 160 test requests, plus 
 
 The interpreter accepts an exact typed JSON grammar for filters and count/IDs/sum/mean aggregates. It rejects duplicate keys, unexpected fields, nonfinite values, unsupported operations and excessive complexity. It never executes arbitrary Python or SQL. Semantic evaluation compares results on independent randomized tables, threshold-boundary witnesses and empty tables. Valid JSON with incorrect behavior remains a failure.
 
-Compare base and tuned generation with `--variant base`, `--variant tuned`, and `--variant typed_slot`. The last is a deterministic parser for a documented bounded language, not constrained neural decoding. It receives only request text, with no oracle label. Independent challenge wording exposes its limited coverage. All variants use the same runtime gate.
+Compare base and tuned generation with `--variant base`, `--variant tuned`, and `--variant typed_slot`. The last is a deterministic parser, not constrained neural decoding. It receives only request text, with no oracle label. In new runs it knows only the training wording, like the models; `typed_slot_all_wordings` also knows the validation and test wording and is reported for reference, never selected. Runs recorded before this change used the all-wordings parser as `typed_slot`. All variants use the same runtime gate.
 
 ### What was learned, and production tradeoffs
 
-The tuned model's generated-test schema validity was 93.13%, while execution correctness was 90.63%. Correctness fell to 62.5% on unseen field combinations. The deterministic parser achieved 100% on generated tasks, but handled only 1/8 independent challenges. See [the measured comparison](SLM_RESULTS.md#d02-syntax-semantics-and-a-bounded-parser).
+The tuned model's generated-test schema validity was 93.13%, while execution correctness was 90.63%. Correctness fell to 62.5% on unseen field combinations. The recorded parser achieved 100% on generated tasks only because it was written with the test wording; limited to training wording, it handled none of them, and it handled 1/8 independent challenges either way. See [the measured comparison](SLM_RESULTS.md#d02-syntax-semantics-and-a-bounded-parser).
 
-The parser illustrates a useful trade: explicit command languages can offer exact behavior inside their grammar, at the cost of accepting less language. A neural model may cover more wording while making subtle semantic errors. Fine-tuning, constrained decoding and external validation address different parts of this problem; constrained neural decoding is not implemented here.
+The parser illustrates a useful trade: explicit command languages can offer exact behavior inside their grammar, at the cost of accepting less language. A fair comparison gives the parser author no more of the evaluation wording than the model saw. A neural model may cover more wording while making subtle semantic errors. Fine-tuning, constrained decoding and external validation address different parts of this problem; constrained neural decoding is not implemented here.
 
 In production, version the schema and executor together, keep data access authorization outside generation, and test new combinations separately from familiar primitives. If the desired semantics cannot be independently specified, passing schema validation alone cannot justify execution.
 
@@ -157,7 +157,8 @@ In production, version the schema and executor together, keep data access author
 1. Run the boundary example, then remove the amount-50 row. Explain why both programs now return the same result and the reduced fixture fails to expose the bug.
 2. Try `typed_slot` on supported wording and “Do not count tickets where status equals open.” The latter should be rejected as outside its grammar. Rejection demonstrates a boundary, not understanding of arbitrary negation.
 3. Compare base, tuned and typed-parser outputs for a new composition. Record parsing, schema and execution outcomes separately.
-4. Design another witness for `AND` versus `OR`. Your fixture must contain rows on which the two predicates disagree; two all-matching rows cannot distinguish them.
+4. Run `python scripts/rescore_typed_slot.py` and explain why the parser's validation tie with the tuned model disappears. Which other baselines in this lab could have seen evaluation data while being written?
+5. Design another witness for `AND` versus `OR`. Your fixture must contain rows on which the two predicates disagree; two all-matching rows cannot distinguish them.
 
 Read [query_dsl.py](../src/ml_training/query_dsl.py) for parsing/execution and [schema_data.py](../src/ml_training/schema_data.py) for split construction, fixtures and the typed parser. The latter receives request text, not the hidden expected AST.
 

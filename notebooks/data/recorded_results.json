@@ -8,15 +8,18 @@
     "artifacts/distillation/local-s41-20261026T171916Z-abf0ce/metrics.json": "b9c85e034ac9bacc9cff19201ed40764d5752f7d1f0c2af7dc300d5f86ec68b5",
     "artifacts/distillation/local-s41-20261026T171916Z-abf0ce/challenge.json": "5a76b7f8778b9ce898634f52e9d21b3840e38d1e0e38817af0ab15d31279899d",
     "artifacts/distillation/local-s41-20261026T171916Z-abf0ce/costs.json": "7ea994c3fb3fe716b5f3e841e07bcbcd205a366af720a58e43b94dd13f52dafa",
+    "artifacts/distillation/local-s41-20261026T171916Z-abf0ce/teacher_curation/outputs.jsonl": "b62e543e7222b356404ffb7fe12bd66642536fa8185cc7b43f39839fd7424e5e",
     "artifacts/validation/selected_structured_runs.json": "bd5efadf536cddf3b256f8d61082ecc4b6bf64127fd35e606e332025f3784be0",
     "artifacts/schema_dsl/local-s41-20261026T175054Z-61eada/run.json": "adca5eab57de0808295de6080d49a99158cfd44c58ccb7397c94c925180a3c3e",
     "artifacts/schema_dsl/local-s41-20261026T175054Z-61eada/metrics.json": "05b8f14bc79a8d0a642af24b7ad4e9365c565bfbbcbc4efd13f5a87ac8e4ecee",
     "artifacts/schema_dsl/local-s41-20261026T175054Z-61eada/challenge.json": "15ff8a505a8d3dd33e988422b0cfca82c9abcec8fcdce4a33e6159a22c30a41e",
+    "artifacts/validation/d02-typed-slot-training-wording.json": "fc5a69f9c6be17a8a9d3f6e47f2bd45ff12ea6d5aed1cb60297166dc5b5e1afb",
     "artifacts/validation/selected_rlvr_run.json": "4ada4c06b251c342971b1075b960c2e96c6178eb7b9d0443162ffba828a862b1",
     "artifacts/rlvr/local-s41-20261026T180904Z-d20988/run.json": "328b2448130d56a23f21b3a1ea98bd58a58354d689e75d60e03a5e4c5d105bb2",
     "artifacts/rlvr/local-s41-20261026T180904Z-d20988/metrics.json": "295d1a7732dd97edf1c3f521660517b88a8f3b0284e78e1c136f9c74f0152562",
     "artifacts/rlvr/local-s41-20261026T180904Z-d20988/challenge.json": "6622b5bf2e228fc16a9de3e120c6b39b0b3bbb93de484cd5f0c22cb39e355e40",
     "artifacts/rlvr/local-s41-20261026T180904Z-d20988/grpo_training.json": "c836d1e816d2e490820f41fbb38fc29b9e090ae41ab9dbfdb700538c5e329cf7",
+    "artifacts/validation/rlvr-hidden-v2.json": "5165c21b47e30ae465a6a5d02bf851c93291425deb731567b57166389b793c88",
     "artifacts/edge/local-s41-20261026T175513Z-eae775/run.json": "346cbfafb0c734b9faee6df374a5c4439fdfa69fe1811906213fdba7723143c4",
     "artifacts/edge/local-s41-20261026T175513Z-eae775/metrics.json": "092552fba0db3e4fae6e7d0db455d6e2b07db9e3857e1be06a92cca709812842",
     "artifacts/edge/local-s41-20261026T175513Z-eae775/challenge.json": "6996540ba39c7485965288e7b7ece5fd08eae9dfc155e7ebcb87ece0e1321a07",
@@ -40,6 +43,7 @@
     "artifacts/fast_classifier/local-s43-20261026T163417Z-e84941/run.json": "ec51deb1a50828df39464103613d1e1583bb84abc5ab9e39cdf608d09ae81fee",
     "artifacts/fast_classifier/local-s43-20261026T163417Z-e84941/benchmarks.json": "51ee07be37e4812407bbc60a106cf07b9625dedc6dafe596a582c73ed3179d87",
     "artifacts/validation/classifier-batches.json": "63a0b2a62274566984ce9787e6daf0b4e3dc7fd9e7e0cf82ba7a7c6f7e5e226c",
+    "artifacts/validation/onnx-fresh-process.json": "0d2dec4959dfc9d9926f5c3c4abb2fd34a54a17c1b1f030ae45c4c149b29ef58",
     "artifacts/explainability/local-s41-20261026T163345Z-d633f1/run.json": "c65e4b0d91b05f512561acc6ddbbd96b0d051c46e969a5bbfb398f92b8c03e0c",
     "artifacts/explainability/local-s41-20261026T163345Z-d633f1/feature_edit.json": "996dd8b9907a00149f38a452cc12e9683b229d672568fdba97cd84b9308d4048",
     "artifacts/explainability/local-s41-20261026T163345Z-d633f1/correlated_features.json": "cd3a5d0b434d2272a1acc68066dba0e105169154f8f11ca20e29da49a367a521",
@@ -163,6 +167,14 @@
         "teacher_label_tokens": 31001,
         "time_only_break_even_requests": 1711.3428670977066,
         "break_even_note": "Illustrative time-only ratio using batch labeling/training versus warm batch-1 p95 savings; not monetary cost or a throughput forecast. Only relevant if quality requirements are met."
+      },
+      "curation": {
+        "examples": 2016,
+        "accepted": 1974,
+        "accepted_equal_oracle": true,
+        "rejected_by_template": {
+          "train-query-2": 42
+        }
       }
     },
     "D02": {
@@ -231,6 +243,42 @@
           "ast_exact_match": 0.125,
           "novel_composition_accuracy": null
         }
+      },
+      "training_wording_baseline": {
+        "metrics": {
+          "validation": {
+            "rows": 100,
+            "json_parse_rate": 0.0,
+            "schema_validity": 0.0,
+            "semantic_accuracy": 0.0,
+            "joint_accuracy": 0.0,
+            "ast_exact_match": 0.0,
+            "novel_composition_accuracy": null,
+            "parsed": 0
+          },
+          "test": {
+            "rows": 160,
+            "json_parse_rate": 0.0,
+            "schema_validity": 0.0,
+            "semantic_accuracy": 0.0,
+            "joint_accuracy": 0.0,
+            "ast_exact_match": 0.0,
+            "novel_composition_accuracy": 0.0,
+            "parsed": 0
+          },
+          "challenge": {
+            "rows": 8,
+            "json_parse_rate": 0.125,
+            "schema_validity": 0.125,
+            "semantic_accuracy": 0.125,
+            "joint_accuracy": 0.125,
+            "ast_exact_match": 0.125,
+            "novel_composition_accuracy": null,
+            "parsed": 1
+          }
+        },
+        "recorded_selection": "typed_slot",
+        "selection_with_training_wording_baseline": "tuned"
       }
     },
     "D03": {
@@ -348,6 +396,108 @@
         "constant_reward_groups": 48,
         "parameters_changed": true,
         "elapsed_training_seconds": 255.5181747500319
+      },
+      "hidden_v2": {
+        "test": {
+          "base": {
+            "greedy_pass_at_1": 0.0,
+            "rows": 96,
+            "sampled_pass_at_1": 0.0,
+            "verifier_selected_success_at_n": 0.0,
+            "empirical_any_success_at_n": 0.0,
+            "public_selected_pass_rate": 0.0,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 61.541666666666664,
+            "greedy_mean_generation_tokens": 45.84375
+          },
+          "sft": {
+            "greedy_pass_at_1": 0.9270833333333334,
+            "rows": 96,
+            "sampled_pass_at_1": 0.8854166666666666,
+            "verifier_selected_success_at_n": 0.9791666666666666,
+            "empirical_any_success_at_n": 0.9791666666666666,
+            "public_selected_pass_rate": 0.9791666666666666,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 39.5234375,
+            "greedy_mean_generation_tokens": 40.708333333333336
+          },
+          "rlvr": {
+            "greedy_pass_at_1": 0.9270833333333334,
+            "rows": 96,
+            "sampled_pass_at_1": 0.8854166666666666,
+            "verifier_selected_success_at_n": 0.9791666666666666,
+            "empirical_any_success_at_n": 0.9791666666666666,
+            "public_selected_pass_rate": 0.9791666666666666,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 39.5234375,
+            "greedy_mean_generation_tokens": 40.708333333333336
+          },
+          "sft_control": {
+            "greedy_pass_at_1": 0.9270833333333334,
+            "rows": 96,
+            "sampled_pass_at_1": 0.8958333333333334,
+            "verifier_selected_success_at_n": 0.9791666666666666,
+            "empirical_any_success_at_n": 0.9791666666666666,
+            "public_selected_pass_rate": 0.9791666666666666,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 40.4140625,
+            "greedy_mean_generation_tokens": 39.895833333333336
+          }
+        },
+        "challenge": {
+          "base": {
+            "greedy_pass_at_1": 0.0,
+            "rows": 8,
+            "sampled_pass_at_1": 0.0,
+            "verifier_selected_success_at_n": 0.0,
+            "empirical_any_success_at_n": 0.0,
+            "public_selected_pass_rate": 0.0,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 43.3125,
+            "greedy_mean_generation_tokens": 52.625
+          },
+          "sft": {
+            "greedy_pass_at_1": 0.625,
+            "rows": 8,
+            "sampled_pass_at_1": 0.375,
+            "verifier_selected_success_at_n": 0.625,
+            "empirical_any_success_at_n": 0.625,
+            "public_selected_pass_rate": 0.625,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 30.3125,
+            "greedy_mean_generation_tokens": 31.0
+          },
+          "rlvr": {
+            "greedy_pass_at_1": 0.625,
+            "rows": 8,
+            "sampled_pass_at_1": 0.375,
+            "verifier_selected_success_at_n": 0.625,
+            "empirical_any_success_at_n": 0.625,
+            "public_selected_pass_rate": 0.625,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 30.3125,
+            "greedy_mean_generation_tokens": 31.0
+          },
+          "sft_control": {
+            "greedy_pass_at_1": 0.625,
+            "rows": 8,
+            "sampled_pass_at_1": 0.375,
+            "verifier_selected_success_at_n": 0.625,
+            "empirical_any_success_at_n": 0.625,
+            "public_selected_pass_rate": 0.625,
+            "public_pass_hidden_failure_rate": 0.0,
+            "n": 4,
+            "mean_generation_tokens": 31.28125,
+            "greedy_mean_generation_tokens": 31.0
+          }
+        }
       }
     },
     "D04": {
@@ -1968,6 +2118,23 @@
               }
             }
           }
+        }
+      ],
+      "fresh_process_remeasured": [
+        {
+          "run": "artifacts/fast_classifier/local-s41-20261026T163410Z-e369ea",
+          "minimal_scorer": 0.0961587498895824,
+          "with_training_imports": 1.0331603330560029
+        },
+        {
+          "run": "artifacts/fast_classifier/local-s42-20261026T163413Z-7840a0",
+          "minimal_scorer": 0.09522412484511733,
+          "with_training_imports": 1.0385928330942988
+        },
+        {
+          "run": "artifacts/fast_classifier/local-s43-20261026T163417Z-e84941",
+          "minimal_scorer": 0.0961162920575589,
+          "with_training_imports": 1.038359500002116
         }
       ]
     },

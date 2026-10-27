@@ -8,12 +8,12 @@ Read this chapter as the curriculum's synthesis after the [learning guide](../LE
 
 | ID | Implemented use case | Observed finding | Evidence |
 | --- | --- | --- | --- |
-| D01 | Actual teacher-label distillation into a 0.5B router | Tuned joint accuracy was 100% on generated tests, but 6/12 on independent challenges; every escalation challenge failed | [SLM results](../SLM_RESULTS.md) |
-| D02 | Fine-tuned JSON query AST with bounded execution | Tuned semantic correctness was 90.63%, falling to 62.5% on new compositions; the typed parser won generated tasks but covered only 1/8 challenges | [SLM results](../SLM_RESULTS.md) |
-| D03 | Actual TRL GRPO with public execution rewards | Fifty updates changed weights, but only two reward groups varied; held-out accuracy matched SFT and the control trained for the same wall time | [RLVR results](../RLVR_RESULTS.md) |
+| D01 | Actual teacher-label distillation into a 0.5B router | Tuned joint accuracy was 100% on generated tests, but 6/12 on independent challenges; every escalation challenge failed. Teacher answers were kept only when they matched the oracle, so the student trained on gold labels | [SLM results](../SLM_RESULTS.md) |
+| D02 | Fine-tuned JSON query AST with bounded execution | Tuned semantic correctness was 90.63%, falling to 62.5% on new compositions; the recorded typed parser's generated-task win came from being written with the test wording, and with training wording only it handled none; it covered 1/8 challenges either way | [SLM results](../SLM_RESULTS.md) |
+| D03 | Actual TRL GRPO with public execution rewards | Fifty updates changed weights, but only two reward groups varied; held-out accuracy matched SFT and the control trained for the same wall time; re-grading on fixtures disjoint from the reward changed nothing | [RLVR results](../RLVR_RESULTS.md) |
 | D04 | Local device-command adapter and quantized export | Actual offline inference worked under OS-denied networking; schema-valid commands still sometimes misunderstood user intent | [SLM results](../SLM_RESULTS.md) |
 | D05 | Tabular anomaly prediction with calibration and drift | XGBoost beat logistic average precision across three seeds, but future FPR rose to 10.3–13.4% from a 5% validation budget | [CPU results](../CPU_RESULTS.md) |
-| D06 | Native and ONNX request classifiers plus localhost HTTP | Logistic won validation; parity error stayed below 2.4e-7; measured HTTP p95 was 0.34–0.43 ms at concurrency 1 | [CPU results](../CPU_RESULTS.md) |
+| D06 | Native and ONNX request classifiers plus localhost HTTP | Logistic won validation; parity error stayed below 2.4e-7; measured HTTP p95 was 0.34–0.43 ms at concurrency 1; a minimal ONNX scorer starts in about 0.1 s, against 1.1 s recorded with training imports | [CPU results](../CPU_RESULTS.md) |
 | D07 | Actual TreeSHAP and coefficient explanations with feature edits | Additivity passed on 100 held-out rows; 196 small edits reproduced exactly; duplicate predictors illustrated non-unique attribution despite identical predictions | [CPU results](../CPU_RESULTS.md) |
 | D08 | Separately trained bi-encoder and cross-encoder | Tuned retrieval reached 99.3% top-1; adding the tuned reranker reduced the best pipeline to 88.9%, despite improving its fixed-pool comparison | [Retrieval results](../RETRIEVAL_RESULTS.md) |
 | D09 | No-training baseline, actual hybrid, eight component ablations and live knowledge update | Hybrid solved 27/32 versus baseline 19/32, used the teacher on 43.75% of requests, and had higher measured p95 latency | [Hybrid results](../HYBRID_RESULTS.md) |
@@ -66,7 +66,7 @@ The generated [evidence index](../../artifacts/report.md) lists every run with i
 ## Five ideas to take away
 
 1. **Learning a format is different from learning a task.** D02's parse, schema and semantic scores separate those layers; D04's valid-but-unintended actions show why that distinction matters.
-2. **A useful baseline can be very small.** A typed parser won generated command tasks, a logistic model won classifier validation, and the SFT query model matched RL. Their narrower assumptions should be explicit.
+2. **A useful baseline can be very small, if it is a fair one.** A logistic model won classifier validation and the SFT query model matched RL. The typed parser's apparent win came from knowing the test wording, and D01's student beat its teacher only because it trained on oracle labels. Give every baseline the same information as the model it is compared against, and state its narrower assumptions.
 3. **The evaluation distribution determines the claim.** D01's generated-test success and challenge failures are compatible. D05's changed future FPR exposes a threshold's dependence on the population.
 4. **More computation needs an incremental benefit.** D03 spent training work without a measured gain; D08's extra reranking stage hurt the strongest pipeline; D09's lower teacher usage did not imply lower p95.
 5. **Evidence has a scope.** Export parity, offline execution, additivity and exact replay establish useful engineering properties. None substitutes for representative task evaluation or production operation.
