@@ -22,14 +22,18 @@ for run in args.runs:
         from ml_training.structured import reevaluate
     else:
         raise ValueError(f"Unexpected SLM demo: {demo}")
-    reproduction = reevaluate(run) | {"elapsed_seconds": time.perf_counter()-start}
+    reproduction = reevaluate(run) | {"elapsed_seconds": time.perf_counter() - start}
     cold = {}
     for variant in read_json(run / "metrics.json"):
         output = args.output.parent / "cold_slm" / run.name / f"{variant}.json"
         launched = time.perf_counter()
-        subprocess.run([sys.executable, str(ROOT / "scripts/cold_slm.py"), str(run), variant, str(output)],
-                       check=True, timeout=180, cwd=ROOT)
-        cold[variant] = read_json(output) | {"process_launch_to_exit_seconds": time.perf_counter()-launched}
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts/cold_slm.py"), str(run), variant, str(output)],
+            check=True,
+            timeout=180,
+            cwd=ROOT,
+        )
+        cold[variant] = read_json(output) | {"process_launch_to_exit_seconds": time.perf_counter() - launched}
     results.append(reproduction | {"cold_processes": cold})
     write_json(args.output, {"environment": environment(), "completed_runs": results})
     print(f"Reproduced {demo}: {run}", flush=True)

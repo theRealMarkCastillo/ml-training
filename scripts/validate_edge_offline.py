@@ -41,13 +41,26 @@ first = infer(model, tokenizer, SYSTEM, "Set the thermostat to 22 degrees.", max
 first_inference_seconds = time.perf_counter() - started
 challenge = read_json(ROOT / read_json(args.run / "run.json")["dataset_path"] / "challenge.json")
 outputs = infer_rows(model, tokenizer, challenge, max_tokens=64)
-rows = [{"input": row["user"], "expected": row["expected"], "output": output,
-         "runtime": gate("edge", output["text"])} for row, output in zip(challenge, outputs, strict=True)]
-write_json(args.output, {"status": "actual_offline_inference", "run": str(args.run.resolve()), "variant": args.variant,
-                         "network_denial_observed": denial, "fresh_process_first_inference_seconds": first_inference_seconds,
-                         "cold_scope": "Fresh interpreter through imports, checksums, model loading, and first generation; OS file cache uncontrolled",
-                         "first_prediction": first, "first_runtime": gate("edge", first["text"]),
-                         "challenge_metrics": score(challenge, outputs), "challenge_predictions": rows,
-                         "process_peak_rss_bytes_macos": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-                         "simulator_only": True, "elapsed_seconds": time.perf_counter() - started})
+rows = [
+    {"input": row["user"], "expected": row["expected"], "output": output, "runtime": gate("edge", output["text"])}
+    for row, output in zip(challenge, outputs, strict=True)
+]
+write_json(
+    args.output,
+    {
+        "status": "actual_offline_inference",
+        "run": str(args.run.resolve()),
+        "variant": args.variant,
+        "network_denial_observed": denial,
+        "fresh_process_first_inference_seconds": first_inference_seconds,
+        "cold_scope": "Fresh interpreter through imports, checksums, model loading, and first generation; OS file cache uncontrolled",
+        "first_prediction": first,
+        "first_runtime": gate("edge", first["text"]),
+        "challenge_metrics": score(challenge, outputs),
+        "challenge_predictions": rows,
+        "process_peak_rss_bytes_macos": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "simulator_only": True,
+        "elapsed_seconds": time.perf_counter() - started,
+    },
+)
 print(args.output)

@@ -7,8 +7,9 @@ import subprocess
 
 def run_isolated(command, *, cwd, env, timeout):
     """Capture a POSIX command; terminate its whole process group on interruption."""
-    with subprocess.Popen(command, cwd=cwd, env=env, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, text=True, start_new_session=True) as process:
+    with subprocess.Popen(
+        command, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True
+    ) as process:
         try:
             stdout, stderr = process.communicate(timeout=timeout)
         except BaseException as error:

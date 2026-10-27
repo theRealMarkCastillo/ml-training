@@ -6,8 +6,11 @@ import json
 import math
 
 FIELDS = {"priority": str, "status": str, "team": str, "age_hours": (int, float), "amount": (int, float)}
-ENUMS = {"priority": {"low", "normal", "urgent"}, "status": {"open", "pending", "closed"},
-         "team": {"billing", "support", "security"}}
+ENUMS = {
+    "priority": {"low", "normal", "urgent"},
+    "status": {"open", "pending", "closed"},
+    "team": {"billing", "support", "security"},
+}
 MAX_ROWS = 1000
 MAX_DEPTH = 3
 MAX_NODES = 15
@@ -25,6 +28,7 @@ def _exact(obj, keys):
 def parse(text):
     if not isinstance(text, str) or len(text) > 4096:
         raise InvalidQuery("Query must be text of at most 4096 characters")
+
     def unique(pairs):
         result = {}
         for key, value in pairs:
@@ -32,9 +36,13 @@ def parse(text):
                 raise InvalidQuery("Duplicate JSON key")
             result[key] = value
         return result
+
     try:
-        ast = json.loads(text, object_pairs_hook=unique,
-                         parse_constant=lambda value: (_ for _ in ()).throw(InvalidQuery("Nonfinite number")))
+        ast = json.loads(
+            text,
+            object_pairs_hook=unique,
+            parse_constant=lambda value: (_ for _ in ()).throw(InvalidQuery("Nonfinite number")),
+        )
     except (ValueError, RecursionError) as error:
         raise InvalidQuery(str(error)) from error
     validate(ast)
@@ -44,6 +52,7 @@ def parse(text):
 def validate(ast):
     _exact(ast, {"filter", "aggregate"})
     nodes = 0
+
     def visit(node, depth):
         nonlocal nodes
         nodes += 1
@@ -70,6 +79,7 @@ def validate(ast):
                     raise InvalidQuery("Invalid categorical predicate")
             elif op not in {"eq", "ne", "gt", "ge", "lt", "le"} or not 0 <= value <= 100000 or not math.isfinite(value):
                 raise InvalidQuery("Invalid numerical predicate")
+
     visit(ast["filter"], 1)
     aggregate = ast["aggregate"]
     if not isinstance(aggregate, dict):
@@ -89,6 +99,7 @@ def execute(ast, rows):
     validate(ast)
     if not isinstance(rows, list) or len(rows) > MAX_ROWS:
         raise InvalidQuery("Table exceeds bounded row count")
+
     def matches(node, row):
         if "all" in node:
             return all(matches(child, row) for child in node["all"])
@@ -96,12 +107,18 @@ def execute(ast, rows):
             return any(matches(child, row) for child in node["any"])
         left, right = row[node["field"]], node["value"]
         op = node["op"]
-        if op == "eq": return left == right
-        if op == "ne": return left != right
-        if op == "gt": return left > right
-        if op == "ge": return left >= right
-        if op == "lt": return left < right
+        if op == "eq":
+            return left == right
+        if op == "ne":
+            return left != right
+        if op == "gt":
+            return left > right
+        if op == "ge":
+            return left >= right
+        if op == "lt":
+            return left < right
         return left <= right
+
     selected = [row for row in rows if matches(ast["filter"], row)]
     operation = ast["aggregate"]["op"]
     if operation == "ids":

@@ -13,7 +13,9 @@ def ast_key(ast):
 
 
 def build(profile, seed, excluded):
-    counts = {"train": 500, "validation": 64, "test": 96} if profile == "local" else {"train": 8, "validation": 4, "test": 4}
+    counts = (
+        {"train": 500, "validation": 64, "test": 96} if profile == "local" else {"train": 8, "validation": 4, "test": 4}
+    )
     used = {ast_key(row["expected"]) for row in excluded}
     selected = {split: [] for split in counts}
     # Draw from the same declared grammar, with new ASTs and random seeds. Never
@@ -27,7 +29,7 @@ def build(profile, seed, excluded):
                 continue
             # Preserve the explicit unseen-composition slice in the smaller test.
             if split == "test":
-                want_novel = len(selected[split]) >= counts[split] * .75
+                want_novel = len(selected[split]) >= counts[split] * 0.75
                 if bool(row["novel_composition"]) != want_novel:
                     continue
             i = len(selected[split])
@@ -63,13 +65,20 @@ def prepare(profile, seed, source_run):
     rows = build(profile, seed, source_rows + source_challenge)
     write_json(folder / "rows.json", rows)
     write_json(folder / "challenge.json", source_challenge)
-    write_json(folder / "manifest.json", {"version": "rlvr-v1", "synthetic": True, "seed": seed,
-                                         "sft_dataset_sha256": digest(source_folder / "manifest.json"),
-                                         "split_policy": "Distinct ASTs across RL partitions and all SFT examples/challenges; disjoint phrasing families",
-                                         "reward": "1 iff schema-valid output passes all public execution fixtures, otherwise 0",
-                                         "hidden_evaluation": "Different random-table seed plus boundary and empty fixtures; never used by training reward",
-                                         "counts": {s: sum(r["split"] == s for r in rows) for s in ["train", "validation", "test"]},
-                                         "files": {p.name: digest(p) for p in folder.glob("*.json")}})
+    write_json(
+        folder / "manifest.json",
+        {
+            "version": "rlvr-v1",
+            "synthetic": True,
+            "seed": seed,
+            "sft_dataset_sha256": digest(source_folder / "manifest.json"),
+            "split_policy": "Distinct ASTs across RL partitions and all SFT examples/challenges; disjoint phrasing families",
+            "reward": "1 iff schema-valid output passes all public execution fixtures, otherwise 0",
+            "hidden_evaluation": "Different random-table seed plus boundary and empty fixtures; never used by training reward",
+            "counts": {s: sum(r["split"] == s for r in rows) for s in ["train", "validation", "test"]},
+            "files": {p.name: digest(p) for p in folder.glob("*.json")},
+        },
+    )
     return folder
 
 

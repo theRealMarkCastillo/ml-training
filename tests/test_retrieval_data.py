@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import pytest
 
 from ml_training.retrieval_data import audit, build

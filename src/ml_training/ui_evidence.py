@@ -18,7 +18,7 @@ def validate_submission(record, demo, submitted, variant, run_name):
     elif demo == "explainability":
         assert result["execution"] == "fresh_saved_model"
         assert result["row_index"] == submitted["row_index"]
-        assert result["updates"] == {"amount":submitted["amount"]}
+        assert result["updates"] == {"amount": submitted["amount"]}
     else:
         assert command[command.index("--query") + 1] == submitted
         assert result["variant"] == variant

@@ -16,19 +16,18 @@ def test_future_events_and_labels_cannot_change_past_features():
 
 
 def test_current_event_does_not_enter_its_own_history():
-    events = generate_events(3, 17).with_columns(pl.lit(1).alias("entity_id"),
-                                               pl.Series("timestamp", [0, 0, 3601]))
+    events = generate_events(3, 17).with_columns(pl.lit(1).alias("entity_id"), pl.Series("timestamp", [0, 0, 3601]))
     frame = build_features(events)
     assert frame["prior_count_1h"].to_list() == [0, 0, 0]
 
 
 def test_history_uses_prior_event_only():
-    events = generate_events(3, 17).with_columns(pl.lit(1).alias("entity_id"),
-                                               pl.Series("timestamp", [0, 30, 60]),
-                                               pl.Series("amount", [10., 30., 900.]))
+    events = generate_events(3, 17).with_columns(
+        pl.lit(1).alias("entity_id"), pl.Series("timestamp", [0, 30, 60]), pl.Series("amount", [10.0, 30.0, 900.0])
+    )
     frame = build_features(events)
     assert frame["prior_count_1h"].to_list() == [0, 1, 2]
-    assert frame["prior_mean_amount_1h"].to_list() == [None, 10., 20.]
+    assert frame["prior_mean_amount_1h"].to_list() == [None, 10.0, 20.0]
 
 
 def test_split_audit_rejects_overlap_and_excludes_identifiers():
@@ -42,14 +41,15 @@ def test_split_audit_rejects_overlap_and_excludes_identifiers():
 
 def test_threshold_fpr_budget_handles_ties():
     y = np.array([0] * 100 + [1] * 10)
-    scores = np.array([.1] * 95 + [.9] * 5 + [.9] * 10)
+    scores = np.array([0.1] * 95 + [0.9] * 5 + [0.9] * 10)
     threshold = threshold_at_fpr(y, scores)
-    assert (scores[y == 0] >= threshold).mean() <= .05
+    assert (scores[y == 0] >= threshold).mean() <= 0.05
     assert (scores[y == 1] >= threshold).mean() == 1
 
 
 def test_preprocessing_is_fit_on_training_only():
     from ml_training.tabular import matrix, preprocessor
+
     frames = split_frame(build_features(generate_events(1000, 41)))
     transform = preprocessor().fit(matrix(frames["train"]))
     before = transform.named_transformers_["numeric"].named_steps["impute"].statistics_.copy()

@@ -110,10 +110,12 @@ Run this small semantics exercise in the root CPU environment; it needs no model
 from ml_training.query_dsl import execute
 
 query = {
-    "filter": {"all": [
-        {"field": "priority", "op": "eq", "value": "urgent"},
-        {"field": "amount", "op": "gt", "value": 50},
-    ]},
+    "filter": {
+        "all": [
+            {"field": "priority", "op": "eq", "value": "urgent"},
+            {"field": "amount", "op": "gt", "value": 50},
+        ]
+    },
     "aggregate": {"op": "count"},
 }
 rows = [

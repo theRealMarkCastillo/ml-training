@@ -50,18 +50,24 @@ RESOURCES = [
     ("deployment-slot", "deployment slot", "application release position"),
 ]
 TEMPLATES = {
-    "train": ["For {version}, how do I {verb} a {name}?",
-              "Find the {version} endpoint to {verb} the {alias}.",
-              "Which {name} API in {version} lets me {verb} its configuration?",
-              "Our client uses {version}; I need to {verb} the {alias} by ID.",
-              "Show the {version} reference for {verb} operations on {name}."],
-    "validation": ["I am integrating {alias} in {version}. Point me to the operation that will {verb} it.",
-                   "Locate documentation for {verb} of {name} using {version}, not another release.",
-                   "What is the supported route for {verb} on {name}, version {number}?"],
-    "test": ["The SDK is pinned to version {number}. I want to {verb} a {alias}; which page applies?",
-             "We must {verb} our {name} through {version}. Please pick the relevant operation reference.",
-             "A colleague sent the wrong release's instructions for {name}. Locate {version} so I can {verb} it.",
-             "Does the {version} API document how to {verb} a {alias}? Retrieve that exact page."],
+    "train": [
+        "For {version}, how do I {verb} a {name}?",
+        "Find the {version} endpoint to {verb} the {alias}.",
+        "Which {name} API in {version} lets me {verb} its configuration?",
+        "Our client uses {version}; I need to {verb} the {alias} by ID.",
+        "Show the {version} reference for {verb} operations on {name}.",
+    ],
+    "validation": [
+        "I am integrating {alias} in {version}. Point me to the operation that will {verb} it.",
+        "Locate documentation for {verb} of {name} using {version}, not another release.",
+        "What is the supported route for {verb} on {name}, version {number}?",
+    ],
+    "test": [
+        "The SDK is pinned to version {number}. I want to {verb} a {alias}; which page applies?",
+        "We must {verb} our {name} through {version}. Please pick the relevant operation reference.",
+        "A colleague sent the wrong release's instructions for {name}. Locate {version} so I can {verb} it.",
+        "Does the {version} API document how to {verb} a {alias}? Retrieve that exact page.",
+    ],
 }
 
 
@@ -83,19 +89,40 @@ def build(profile: str):
                     "v2": "Stable API. Authenticate with an OAuth bearer token. Address the record with resource_id. Responses contain result and request_id. Use an idempotency key for updates.",
                     "v3": "Preview API. Authenticate with a scoped bearer token. Address the record with resource_id and revision. Updates return an asynchronous operation_id; reads return the current resource plus revision.",
                 }[version]
-                action = ("Read current settings and status without changing state. This operation cannot edit or change the record."
-                          if operation == "read" else
-                          "Change selected settings on an existing record. This operation modifies state; use GET to inspect without changing it.")
-                text = (f"Harbor Support {version} API reference: {name} / {alias}. "
-                        f"Operation: {verb} ({operation}). {method} /{version}/{slug}/{{resource_id}}. "
-                        f"{action} {behavior} This page applies only to {version}; consult a different version's page for another client release.")
-                corpus.append({"doc_id": doc_id, "family": slug, "split": split, "version": version,
-                               "operation": operation, "text": text})
+                action = (
+                    "Read current settings and status without changing state. This operation cannot edit or change the record."
+                    if operation == "read"
+                    else "Change selected settings on an existing record. This operation modifies state; use GET to inspect without changing it."
+                )
+                text = (
+                    f"Harbor Support {version} API reference: {name} / {alias}. "
+                    f"Operation: {verb} ({operation}). {method} /{version}/{slug}/{{resource_id}}. "
+                    f"{action} {behavior} This page applies only to {version}; consult a different version's page for another client release."
+                )
+                corpus.append(
+                    {
+                        "doc_id": doc_id,
+                        "family": slug,
+                        "split": split,
+                        "version": version,
+                        "operation": operation,
+                        "text": text,
+                    }
+                )
                 for template_id, template in enumerate(TEMPLATES[split]):
                     query = template.format(version=version, number=version[-1], verb=verb, name=name, alias=alias)
-                    queries.append({"query_id": f"{doc_id}-q{template_id}", "family": slug, "split": split,
-                                    "template_family": f"{split}-{template_id}", "version": version,
-                                    "operation": operation, "text": query, "positive_id": doc_id})
+                    queries.append(
+                        {
+                            "query_id": f"{doc_id}-q{template_id}",
+                            "family": slug,
+                            "split": split,
+                            "template_family": f"{split}-{template_id}",
+                            "version": version,
+                            "operation": operation,
+                            "text": query,
+                            "positive_id": doc_id,
+                        }
+                    )
     return corpus, queries
 
 
@@ -119,8 +146,12 @@ def audit(corpus, queries):
             positive = docs[q["positive_id"]]
             if any(positive[k] != q[k] for k in ["family", "split", "version", "operation"]):
                 raise ValueError("Invalid relevance judgment")
-        report[split] = {"queries": len(selected), "families": sorted(families),
-                         "documents": sum(d["split"] == split for d in corpus), "templates": sorted(templates)}
+        report[split] = {
+            "queries": len(selected),
+            "families": sorted(families),
+            "documents": sum(d["split"] == split for d in corpus),
+            "templates": sorted(templates),
+        }
     return report
 
 
@@ -139,11 +170,19 @@ def prepare(profile: str, seed: int) -> Path:
     doc_ids = {d["doc_id"] for d in corpus}
     fixtures = [q for q in fixtures if q["positive_id"] in doc_ids]
     write_json(folder / "challenge.json", fixtures)
-    write_json(folder / "manifest.json", {"version": "retrieval-v1", "synthetic": True,
-                                         "profile": profile, "seed": seed, "audit": checks,
-                                         "seed_note": "Corpus is fixed; seed controls model training and sampling.",
-                                         "relevance": "One correct document per explicit resource, version, operation tuple.",
-                                         "files": {p.name: digest(p) for p in folder.glob("*.json")}})
+    write_json(
+        folder / "manifest.json",
+        {
+            "version": "retrieval-v1",
+            "synthetic": True,
+            "profile": profile,
+            "seed": seed,
+            "audit": checks,
+            "seed_note": "Corpus is fixed; seed controls model training and sampling.",
+            "relevance": "One correct document per explicit resource, version, operation tuple.",
+            "files": {p.name: digest(p) for p in folder.glob("*.json")},
+        },
+    )
     return folder
 
 

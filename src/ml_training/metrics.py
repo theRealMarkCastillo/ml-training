@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score, roc_curve
 
 
-def threshold_at_fpr(y, scores, budget: float = .05) -> float:
+def threshold_at_fpr(y, scores, budget: float = 0.05) -> float:
     if len(np.unique(y)) != 2:
         raise ValueError("Threshold selection requires both classes")
     fpr, tpr, thresholds = roc_curve(y, scores)
@@ -22,10 +22,13 @@ def binary_metrics(y, scores, threshold: float) -> dict:
     negative = ~positive
     both = bool(positive.any() and negative.any())
     return {
-        "rows": len(y), "positives": int(positive.sum()), "prevalence": float(y.mean()),
+        "rows": len(y),
+        "positives": int(positive.sum()),
+        "prevalence": float(y.mean()),
         "pr_auc_average_precision": float(average_precision_score(y, scores)) if positive.any() else None,
         "roc_auc": float(roc_auc_score(y, scores)) if both else None,
-        "brier": float(brier_score_loss(y, scores)), "threshold": threshold,
+        "brier": float(brier_score_loss(y, scores)),
+        "threshold": threshold,
         "recall": float(predicted[positive].mean()) if positive.any() else None,
         "false_positive_rate": float(predicted[negative].mean()) if negative.any() else None,
     }
@@ -39,5 +42,13 @@ def bootstrap_ap(y, scores, seed: int, repetitions: int = 100) -> dict:
         ids = rng.integers(0, len(y), len(y))
         if len(np.unique(y[ids])) == 2:
             values.append(average_precision_score(y[ids], scores[ids]))
-    return {"lower": float(np.percentile(values, 2.5)), "upper": float(np.percentile(values, 97.5)),
-            "repetitions": repetitions, "method": "row bootstrap; ignores within-entity correlation"} if values else {"lower": None, "upper": None}
+    return (
+        {
+            "lower": float(np.percentile(values, 2.5)),
+            "upper": float(np.percentile(values, 97.5)),
+            "repetitions": repetitions,
+            "method": "row bootstrap; ignores within-entity correlation",
+        }
+        if values
+        else {"lower": None, "upper": None}
+    )

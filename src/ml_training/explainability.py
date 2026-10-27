@@ -10,7 +10,17 @@ import polars as pl
 import shap
 from xgboost import XGBClassifier
 
-from ml_training.common import ROOT, complete_run, digest, mark_failed, new_run, read_json, require_reproduced, verify_run, write_json
+from ml_training.common import (
+    ROOT,
+    complete_run,
+    digest,
+    mark_failed,
+    new_run,
+    read_json,
+    require_reproduced,
+    verify_run,
+    write_json,
+)
 from ml_training.data import FEATURES, NUMERIC, load_parts
 from ml_training.tabular import matrix
 
@@ -27,8 +37,9 @@ def setup(source: Path):
     # Deterministic, train-only background. No evaluation rows affect explanations.
     background_rows = parts["train"].sample(n=min(100, parts["train"].height), seed=info["seed"])
     background = preprocessing.transform(matrix(background_rows)).astype(float)
-    explainer = shap.TreeExplainer(tree.pipeline.named_steps["model"], data=background,
-                                   feature_perturbation="interventional", model_output="raw")
+    explainer = shap.TreeExplainer(
+        tree.pipeline.named_steps["model"], data=background, feature_perturbation="interventional", model_output="raw"
+    )
     names = preprocessing.get_feature_names_out(FEATURES).tolist()
     return info, parts, tree, explainer, names, background_rows["event_id"].to_list()
 
@@ -47,14 +58,21 @@ def explain_rows(tree, explainer, names, rows):
     raw = tree.raw_probability(x)
     for i in range(rows.height):
         order = np.argsort(-np.abs(values[i]))
-        result.append({
-            "event_id": int(rows["event_id"][i]) if "event_id" in rows.columns else None,
-            "calibrated_probability": float(calibrated[i]), "uncalibrated_probability": float(raw[i]),
-            "raw_log_odds": float(margin[i]), "base_log_odds": base,
-            "reconstruction_abs_error": float(residual[i]),
-            "contributions_log_odds": dict(zip(names, values[i].tolist())),
-            "reasons": [f"{names[j]} {'increases' if values[i,j] >= 0 else 'decreases'} raw model log-odds by {abs(values[i,j]):.4f} relative to the background" for j in order[:3]],
-        })
+        result.append(
+            {
+                "event_id": int(rows["event_id"][i]) if "event_id" in rows.columns else None,
+                "calibrated_probability": float(calibrated[i]),
+                "uncalibrated_probability": float(raw[i]),
+                "raw_log_odds": float(margin[i]),
+                "base_log_odds": base,
+                "reconstruction_abs_error": float(residual[i]),
+                "contributions_log_odds": dict(zip(names, values[i].tolist())),
+                "reasons": [
+                    f"{names[j]} {'increases' if values[i, j] >= 0 else 'decreases'} raw model log-odds by {abs(values[i, j]):.4f} relative to the background"
+                    for j in order[:3]
+                ],
+            }
+        )
     return result, values
 
 
@@ -94,11 +112,20 @@ def correlated_feature_example(seed):
         model.fit(x[:500], y[:500])
         explainer = shap.TreeExplainer(model, data=x[:100], feature_perturbation="interventional", model_output="raw")
         values = explainer.shap_values(x[500:])
-        records.append({"column_order": names, "mean_abs_attribution": dict(zip(names, np.abs(values).mean(axis=0).tolist())),
-                        "probabilities": model.predict_proba(x[500:])[:, 1].tolist()})
-    return {"description": "Separate synthetic demonstration with exactly duplicated features (correlation=1). Prediction equivalence does not identify a unique causal source of risk.",
-            "max_probability_difference": float(np.max(np.abs(np.array(records[0]["probabilities"]) - records[1]["probabilities"]))),
-            "variants": records}
+        records.append(
+            {
+                "column_order": names,
+                "mean_abs_attribution": dict(zip(names, np.abs(values).mean(axis=0).tolist())),
+                "probabilities": model.predict_proba(x[500:])[:, 1].tolist(),
+            }
+        )
+    return {
+        "description": "Separate synthetic demonstration with exactly duplicated features (correlation=1). Prediction equivalence does not identify a unique causal source of risk.",
+        "max_probability_difference": float(
+            np.max(np.abs(np.array(records[0]["probabilities"]) - records[1]["probabilities"]))
+        ),
+        "variants": records,
+    }
 
 
 def run(source: Path, row_index: int = 0, updates: dict | None = None) -> Path:
@@ -106,7 +133,7 @@ def run(source: Path, row_index: int = 0, updates: dict | None = None) -> Path:
     # Reject bad requests before creating a run directory.
     if not 0 <= row_index < parts["test"].height:
         raise ValueError("Row index is outside held-out data")
-    row = parts["test"][row_index:row_index + 1]
+    row = parts["test"][row_index : row_index + 1]
     updates = updates if updates is not None else {"amount": float(row["amount"][0] or 30) * 1.01}
     changed = modify_row(row, updates)
     result = new_run("explainability", info["profile"], info["seed"])
@@ -118,18 +145,45 @@ def run(source: Path, row_index: int = 0, updates: dict | None = None) -> Path:
         write_json(result / "global_attribution.json", global_attribution)
         before, before_values = explain_rows(tree, explainer, names, row)
         after, after_values = explain_rows(tree, explainer, names, changed)
-        write_json(result / "feature_edit.json", {"row_index": row_index, "updates": updates, "before": before[0], "after": after[0],
-                                                 "attribution_l1_change": float(np.abs(before_values - after_values).sum()),
-                                                 "note": "Conditional feature edit; causal downstream history is not regenerated."})
+        write_json(
+            result / "feature_edit.json",
+            {
+                "row_index": row_index,
+                "updates": updates,
+                "before": before[0],
+                "after": after[0],
+                "attribution_l1_change": float(np.abs(before_values - after_values).sum()),
+                "note": "Conditional feature edit; causal downstream history is not regenerated.",
+            },
+        )
         logistic = joblib.load(source / "logistic.joblib")
         coefficients = logistic.pipeline.named_steps["model"].coef_[0]
-        write_json(result / "logistic_coefficients.json", {
-            "space": "Uncalibrated log-odds: numeric coefficients per training-standardized unit; categorical indicators from one-hot encoding.",
-            "intercept": float(logistic.pipeline.named_steps["model"].intercept_[0]),
-            "coefficients": dict(zip(names, coefficients.tolist())),
-            "numeric_training_means": dict(zip(NUMERIC, logistic.pipeline.named_steps["preprocess"].named_transformers_["numeric"].named_steps["scale"].mean_.tolist())),
-            "numeric_training_scales": dict(zip(NUMERIC, logistic.pipeline.named_steps["preprocess"].named_transformers_["numeric"].named_steps["scale"].scale_.tolist())),
-        })
+        write_json(
+            result / "logistic_coefficients.json",
+            {
+                "space": "Uncalibrated log-odds: numeric coefficients per training-standardized unit; categorical indicators from one-hot encoding.",
+                "intercept": float(logistic.pipeline.named_steps["model"].intercept_[0]),
+                "coefficients": dict(zip(names, coefficients.tolist())),
+                "numeric_training_means": dict(
+                    zip(
+                        NUMERIC,
+                        logistic.pipeline.named_steps["preprocess"]
+                        .named_transformers_["numeric"]
+                        .named_steps["scale"]
+                        .mean_.tolist(),
+                    )
+                ),
+                "numeric_training_scales": dict(
+                    zip(
+                        NUMERIC,
+                        logistic.pipeline.named_steps["preprocess"]
+                        .named_transformers_["numeric"]
+                        .named_steps["scale"]
+                        .scale_.tolist(),
+                    )
+                ),
+            },
+        )
         write_json(result / "correlated_features.json", correlated_feature_example(info["seed"]))
         max_error = max(e["reconstruction_abs_error"] for e in explanations)
         (result / "report.md").write_text(
@@ -141,18 +195,28 @@ def run(source: Path, row_index: int = 0, updates: dict | None = None) -> Path:
             "`feature_edit.json` compares a selected held-out row before and after an allowed edit. "
             "This is a conditional feature edit, not a causal intervention. `logistic_coefficients.json` describes standardized numeric coefficients and category indicators. "
             "`correlated_features.json` shows two models with duplicate predictors: equivalent predictions can allocate feature credit differently. "
-            "Attributions and reason codes do not establish causality or regulatory compliance.\n")
-        complete_run(result, source_run=str(source.relative_to(ROOT)), source_manifest_sha256=digest(source / "run.json"),
-                     background_event_ids=background_ids, output_space="raw log-odds", perturbation="interventional",
-                     rows_explained=len(explanations), max_additivity_residual=max_error, tolerance=1e-5,
-                     edited_row_index=row_index, updates=updates)
+            "Attributions and reason codes do not establish causality or regulatory compliance.\n"
+        )
+        complete_run(
+            result,
+            source_run=str(source.relative_to(ROOT)),
+            source_manifest_sha256=digest(source / "run.json"),
+            background_event_ids=background_ids,
+            output_space="raw log-odds",
+            perturbation="interventional",
+            rows_explained=len(explanations),
+            max_additivity_residual=max_error,
+            tolerance=1e-5,
+            edited_row_index=row_index,
+            updates=updates,
+        )
     except BaseException as error:
         mark_failed(result, error)
         raise
     return result
 
 
-def reevaluate(run: Path, tolerance: float = 0.) -> dict:
+def reevaluate(run: Path, tolerance: float = 0.0) -> dict:
     verify_run(run)
     info = read_json(run / "run.json")
     source = ROOT / info["source_run"]
@@ -175,11 +239,19 @@ def infer_edit(run: Path, row_index: int, updates: dict) -> dict:
     _, parts, tree, explainer, names, _ = setup(source)
     if not 0 <= row_index < parts["test"].height:
         raise ValueError("Row index is outside held-out data")
-    row = parts["test"][row_index:row_index+1]
-    changed = modify_row(row,updates)
-    before, bv = explain_rows(tree,explainer,names,row)
-    after, av = explain_rows(tree,explainer,names,changed)
-    return {"execution":"fresh_saved_model","source_run":str(source),"row_index":row_index,
-            "features_before":row.select(FEATURES).to_dicts()[0],"features_after":changed.select(FEATURES).to_dicts()[0],
-            "updates":updates,"before":before[0],"after":after[0],"attribution_l1_change":float(np.abs(bv-av).sum()),
-            "note":"Conditional feature edit; causal downstream history is not regenerated. Contributions are raw log-odds, not probability or causal effects."}
+    row = parts["test"][row_index : row_index + 1]
+    changed = modify_row(row, updates)
+    before, bv = explain_rows(tree, explainer, names, row)
+    after, av = explain_rows(tree, explainer, names, changed)
+    return {
+        "execution": "fresh_saved_model",
+        "source_run": str(source),
+        "row_index": row_index,
+        "features_before": row.select(FEATURES).to_dicts()[0],
+        "features_after": changed.select(FEATURES).to_dicts()[0],
+        "updates": updates,
+        "before": before[0],
+        "after": after[0],
+        "attribution_l1_change": float(np.abs(bv - av).sum()),
+        "note": "Conditional feature edit; causal downstream history is not regenerated. Contributions are raw log-odds, not probability or causal effects.",
+    }

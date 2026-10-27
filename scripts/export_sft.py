@@ -29,9 +29,17 @@ model.update_modules(tree_unflatten(fused))
 save(args.destination, path(), model, tokenizer, config, donate_model=False)
 restored, restored_tokenizer = load(str(args.destination))
 after = infer_rows(restored, restored_tokenizer, validation, max_tokens=160)
-write_json(args.destination / "fusion_evidence.json", {"source_run": str(args.source_run.resolve()),
-           "source_manifest_sha256": digest(args.source_run / "run.json"), "fused_modules": len(fused),
-           "validation_rows": validation, "before": before, "after": after,
-           "exact_generation_match": [x["text"] for x in before] == [x["text"] for x in after],
-           "note": "Fusion changes floating-point operation order; D03 baselines and both training controls use this identical saved fused checkpoint."})
+write_json(
+    args.destination / "fusion_evidence.json",
+    {
+        "source_run": str(args.source_run.resolve()),
+        "source_manifest_sha256": digest(args.source_run / "run.json"),
+        "fused_modules": len(fused),
+        "validation_rows": validation,
+        "before": before,
+        "after": after,
+        "exact_generation_match": [x["text"] for x in before] == [x["text"] for x in after],
+        "note": "Fusion changes floating-point operation order; D03 baselines and both training controls use this identical saved fused checkpoint.",
+    },
+)
 print(args.destination)

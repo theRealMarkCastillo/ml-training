@@ -3,8 +3,6 @@
 import argparse
 from http.server import ThreadingHTTPServer
 import json
-import os
-from pathlib import Path
 import subprocess
 import sys
 import threading
@@ -16,8 +14,11 @@ from ml_training.common import ROOT, digest, environment, read_json, write_json
 
 
 def latest(demo, seed):
-    candidates = [p for p in (ROOT / "artifacts" / demo).glob(f"local-s{seed}-*")
-                  if read_json(p / "run.json")["status"] == "evaluated"]
+    candidates = [
+        p
+        for p in (ROOT / "artifacts" / demo).glob(f"local-s{seed}-*")
+        if read_json(p / "run.json")["status"] == "evaluated"
+    ]
     if not candidates:
         raise RuntimeError(f"Missing evaluated {demo} seed {seed}")
     return sorted(candidates)[-1]
@@ -28,15 +29,22 @@ def check_http(run):
     server = ThreadingHTTPServer(("127.0.0.1", 0), fast_classifier.handler(runtime))
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
-    cases = [({"features": [[3, .01, 5, 2, 800, 0, .5, 3]]}, 200),
-             ({"features": []}, 400), ({"features": [[True] * 8]}, 400),
-             ({"features": [[float("nan")] * 8]}, 400),
-             ({"features": [[1] * 7]}, 400), ({"extra": 1}, 400)]
+    cases = [
+        ({"features": [[3, 0.01, 5, 2, 800, 0, 0.5, 3]]}, 200),
+        ({"features": []}, 400),
+        ({"features": [[True] * 8]}, 400),
+        ({"features": [[float("nan")] * 8]}, 400),
+        ({"features": [[1] * 7]}, 400),
+        ({"extra": 1}, 400),
+    ]
     results = []
     try:
         for payload, expected in cases:
-            req = Request(f"http://127.0.0.1:{server.server_port}/predict", data=json.dumps(payload).encode(),
-                          headers={"Content-Type": "application/json"})
+            req = Request(
+                f"http://127.0.0.1:{server.server_port}/predict",
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+            )
             try:
                 with urlopen(req, timeout=5) as response:
                     code = response.status
@@ -57,11 +65,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--http", action="store_true")
     args = parser.parse_args()
-    tests = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=ROOT,
-                           capture_output=True, text=True)
-    evidence = {"python_executable": sys.executable, "environment": environment(),
-                "tests": {"returncode": tests.returncode, "stdout": tests.stdout, "stderr": tests.stderr},
-                "evaluations": [], "http": {"status": "not requested"}}
+    tests = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=ROOT, capture_output=True, text=True)
+    evidence = {
+        "python_executable": sys.executable,
+        "environment": environment(),
+        "tests": {"returncode": tests.returncode, "stdout": tests.stdout, "stderr": tests.stderr},
+        "evaluations": [],
+        "http": {"status": "not requested"},
+    }
     if tests.returncode:
         print(tests.stdout)
         print(tests.stderr)

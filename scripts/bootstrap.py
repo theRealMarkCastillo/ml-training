@@ -21,8 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     config = json.loads((ROOT / "configs" / "environments.json").read_text())["environments"]
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("names", nargs="*", metavar="ENVIRONMENT",
-                        help=f"Any of: {', '.join(config)}. Default: all.")
+    parser.add_argument("names", nargs="*", metavar="ENVIRONMENT", help=f"Any of: {', '.join(config)}. Default: all.")
     parser.add_argument("--repro", action="store_true", help="Install into .venv-repro instead of .venv")
     args = parser.parse_args()
     if unknown := sorted(set(args.names) - set(config)):

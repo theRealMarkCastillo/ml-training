@@ -7,14 +7,17 @@ from ml_training.query_dsl import InvalidQuery, equivalent, execute, parse
 AST = {"filter": {"field": "age_hours", "op": "gt", "value": 12}, "aggregate": {"op": "count"}}
 
 
-@pytest.mark.parametrize("text", [
-    '{"filter":{},"filter":{},"aggregate":{"op":"count"}}',
-    '{"filter":{"field":"amount","op":"gt","value":NaN},"aggregate":{"op":"count"}}',
-    json.dumps({"filter": {"field": "__import__", "op": "eq", "value": "os"}, "aggregate": {"op": "count"}}),
-    json.dumps({**AST, "extra": "ignored?"}),
-    json.dumps({"filter": {"field": "amount", "op": "gt", "value": True}, "aggregate": {"op": "count"}}),
-    json.dumps({"filter": {"field": "amount", "op": "gt", "value": 10**1000}, "aggregate": {"op": "count"}}),
-])
+@pytest.mark.parametrize(
+    "text",
+    [
+        '{"filter":{},"filter":{},"aggregate":{"op":"count"}}',
+        '{"filter":{"field":"amount","op":"gt","value":NaN},"aggregate":{"op":"count"}}',
+        json.dumps({"filter": {"field": "__import__", "op": "eq", "value": "os"}, "aggregate": {"op": "count"}}),
+        json.dumps({**AST, "extra": "ignored?"}),
+        json.dumps({"filter": {"field": "amount", "op": "gt", "value": True}, "aggregate": {"op": "count"}}),
+        json.dumps({"filter": {"field": "amount", "op": "gt", "value": 10**1000}, "aggregate": {"op": "count"}}),
+    ],
+)
 def test_untrusted_ast_is_strictly_validated(text):
     with pytest.raises(InvalidQuery):
         parse(text)

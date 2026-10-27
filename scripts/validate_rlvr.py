@@ -14,5 +14,7 @@ parser.add_argument("--output", type=Path, required=True)
 args = parser.parse_args()
 start = time.perf_counter()
 result = reevaluate(args.run, args.device)
-write_json(args.output, {"environment": environment(), "result": result, "elapsed_seconds": time.perf_counter()-start})
+write_json(
+    args.output, {"environment": environment(), "result": result, "elapsed_seconds": time.perf_counter() - start}
+)
 print(args.output)

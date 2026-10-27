@@ -19,7 +19,10 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8,<10"]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.6,<1",
+]
 
 [project.scripts]
 ml-demo = "ml_training.cli:main"
@@ -29,3 +32,18 @@ packages = ["src/ml_training"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+# Notebooks have their own snapshot checks; model environments are installed copies.
+extend-exclude = ["notebooks", "environments"]
+
+[tool.ruff.lint]
+# Errors only (pyflakes and syntax-level pycodestyle); style is left to `ruff format`.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# These imports deliberately follow timing start / proof that networking is denied.
+"scripts/cold_slm.py" = ["E402"]
+"scripts/validate_edge_offline.py" = ["E402"]
