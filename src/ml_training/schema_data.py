@@ -48,31 +48,29 @@ def condition_text(node):
     return f"{node['field']} {OP_WORDS[node['op']]} {node['value']}"
 
 
+# Request wording by aggregate and phrasing style. build() assigns styles 0-1 to
+# training, 2 to validation and 3 to test, so the test wording is never trained on.
+VERB_TEMPLATES = {
+    "count": [
+        "Count tickets",
+        "Return the number of tickets",
+        "How many tickets are there",
+        "Find the count of tickets",
+    ],
+    "ids": ["List ticket IDs", "Return ticket IDs", "Which ticket IDs apply", "Find ticket IDs"],
+    "sum": ["Sum {field}", "Return the total {field}", "Calculate total {field}", "Find the sum of {field}"],
+    "mean": ["Average {field}", "Return the mean {field}", "Calculate average {field}", "Find the mean of {field}"],
+}
+TRAINING_STYLES = (0, 1)
+ALL_STYLES = (0, 1, 2, 3)
+# Grammar the parser accepts that no split's wording uses.
+EXTRA_HEADS = {"sum": ["Sum of {field}"], "mean": ["Average of {field}"]}
+
+
 def task_text(ast, style):
     aggregate = ast["aggregate"]
-    op = aggregate["op"]
-    verbs = {
-        "count": [
-            "Count tickets",
-            "Return the number of tickets",
-            "How many tickets are there",
-            "Find the count of tickets",
-        ],
-        "ids": ["List ticket IDs", "Return ticket IDs", "Which ticket IDs apply", "Find ticket IDs"],
-        "sum": [
-            f"Sum {aggregate.get('field')}",
-            f"Return the total {aggregate.get('field')}",
-            f"Calculate total {aggregate.get('field')}",
-            f"Find the sum of {aggregate.get('field')}",
-        ],
-        "mean": [
-            f"Average {aggregate.get('field')}",
-            f"Return the mean {aggregate.get('field')}",
-            f"Calculate average {aggregate.get('field')}",
-            f"Find the mean of {aggregate.get('field')}",
-        ],
-    }
-    return f"{verbs[op][style]} where {condition_text(ast['filter'])}."
+    head = VERB_TEMPLATES[aggregate["op"]][style].format(field=aggregate.get("field"))
+    return f"{head} where {condition_text(ast['filter'])}."
 
 
 def build(profile, seed):
@@ -115,23 +113,25 @@ def build(profile, seed):
     return rows
 
 
-def tables(ast, seed, hidden=True):
-    """Independent randomized tables plus boundary witnesses and empty input."""
-    rng = random.Random(seed + (901337 if hidden else 0))
+FIELDS = ["priority", "status", "team", "age_hours", "amount"]
 
-    def random_table():
-        return [
-            {
-                "id": f"r{i}",
-                "priority": rng.choice(VALUES["priority"]),
-                "status": rng.choice(VALUES["status"]),
-                "team": rng.choice(VALUES["team"]),
-                "age_hours": rng.randint(0, 110),
-                "amount": rng.randint(0, 110),
-            }
-            for i in range(48)
-        ]
 
+def _random_table(rng, prefix="r"):
+    return [
+        {
+            "id": f"{prefix}{i}",
+            "priority": rng.choice(VALUES["priority"]),
+            "status": rng.choice(VALUES["status"]),
+            "team": rng.choice(VALUES["team"]),
+            "age_hours": rng.randint(0, 110),
+            "amount": rng.randint(0, 110),
+        }
+        for i in range(48)
+    ]
+
+
+def _pivots(ast):
+    """The threshold used for each numeric field; the dataset grammar has at most one per field."""
     thresholds = {"age_hours": [], "amount": []}
 
     def walk(node):
@@ -142,41 +142,72 @@ def tables(ast, seed, hidden=True):
             thresholds[node["field"]].append(node["value"])
 
     walk(ast["filter"])
-    choices = {}
-    for field, values in thresholds.items():
-        # Dataset grammar has at most one predicate per numeric field.
-        pivot = values[0] if values else 24
-        choices[field] = sorted({0, max(0, pivot - 1), pivot, pivot + 1, 110})
-    witness = []
-    for i, values in enumerate(
-        product(VALUES["priority"], VALUES["status"], VALUES["team"], choices["age_hours"], choices["amount"])
-    ):
-        witness.append(dict(zip(["priority", "status", "team", "age_hours", "amount"], values)) | {"id": f"w{i}"})
-    return [random_table(), witness, []]
+    return {field: values[0] if values else 24 for field, values in thresholds.items()}
 
 
-def typed_slot(text):
-    """A deterministic bounded-language parser; not constrained neural decoding."""
+def _witness(choices, prefix="w"):
+    """Every categorical combination crossed with the chosen numeric values."""
+    return [
+        dict(zip(FIELDS, values)) | {"id": f"{prefix}{i}"}
+        for i, values in enumerate(
+            product(VALUES["priority"], VALUES["status"], VALUES["team"], choices["age_hours"], choices["amount"])
+        )
+    ]
+
+
+def tables(ast, seed, hidden=True):
+    """Independent randomized tables plus boundary witnesses and empty input.
+
+    D02 scoring and the D09 evaluator use hidden=True; the D03 training reward uses
+    hidden=False. Only the random table differs between the two, so D03 grades
+    held-out behavior with hidden_tables() instead.
+    """
+    rng = random.Random(seed + (901337 if hidden else 0))
+    random_table = _random_table(rng)
+    choices = {field: sorted({0, max(0, pivot - 1), pivot, pivot + 1, 110}) for field, pivot in _pivots(ast).items()}
+    return [random_table, _witness(choices), []]
+
+
+def hidden_tables(ast, seed):
+    """D03 hidden grading fixtures (version v2), sharing no table with the public reward.
+
+    Three random tables from an unrelated seed, plus a witness table at the range
+    extremes and two and three units either side of each threshold (27 x 6 x 6 =
+    972 rows, within MAX_ROWS). Extremes are kept so hidden grading is never weaker
+    than the reward: a spurious `amount le 0` clause is invisible near a threshold.
+    """
+    rng = random.Random(seed + 7_000_003)
+    randoms = [_random_table(rng, f"h{k}-") for k in range(3)]
+    choices = {
+        field: sorted({0, max(0, pivot - 3), max(0, pivot - 2), min(110, pivot + 2), min(110, pivot + 3), 110})
+        for field, pivot in _pivots(ast).items()
+    }
+    return [*randoms, _witness(choices, "hw")]
+
+
+def typed_slot(text, styles=ALL_STYLES):
+    """A deterministic bounded-language parser; not constrained neural decoding.
+
+    `styles` limits which request wordings it knows. The D02 baseline uses
+    TRAINING_STYLES so it sees no more wording than the trained models; the D09
+    runtime guard and recorded runs use ALL_STYLES.
+    """
     lower = re.sub(r"\s+request reference [a-z0-9-]+\.\s*$", "", text.lower().strip())
     if lower.count(" where ") != 1:
         raise InvalidQuery("Outside typed-slot predicate grammar")
     head, condition = lower.split(" where ")
-    if re.fullmatch(r"(?:list ticket ids|return ticket ids|which ticket ids apply|find ticket ids)", head):
-        aggregate = {"op": "ids"}
-    elif re.fullmatch(
-        r"(?:count tickets|return the number of tickets|how many tickets are there|find the count of tickets)", head
-    ):
-        aggregate = {"op": "count"}
-    else:
-        total = re.fullmatch(
-            r"(?:sum(?: of)?|return the total|calculate total|find the sum of) (age_hours|amount)", head
-        )
-        mean = re.fullmatch(
-            r"(?:average(?: of)?|return the mean|calculate average|find the mean of) (age_hours|amount)", head
-        )
-        if not total and not mean:
-            raise InvalidQuery("Outside typed-slot aggregate grammar")
-        aggregate = {"op": "sum" if total else "mean", "field": (total or mean)[1]}
+    aggregate = None
+    for op in ["ids", "count", "sum", "mean"]:
+        templates = [VERB_TEMPLATES[op][style] for style in styles] + EXTRA_HEADS.get(op, [])
+        for template in templates:
+            pattern = re.escape(template.lower()).replace(re.escape("{field}"), "(age_hours|amount)")
+            if match := re.fullmatch(pattern, head):
+                aggregate = {"op": op, **({"field": match[1]} if match.groups() else {})}
+                break
+        if aggregate:
+            break
+    if aggregate is None:
+        raise InvalidQuery("Outside typed-slot aggregate grammar")
     condition = condition.rstrip(". ")
     if " and " in condition and " or " in condition:
         raise InvalidQuery("Mixed precedence is not supported by this baseline")

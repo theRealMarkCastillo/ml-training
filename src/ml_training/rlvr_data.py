@@ -3,6 +3,8 @@
 import hashlib
 import json
 
+import numpy as np
+
 from ml_training.common import ROOT, digest, new_dataset_folder, read_json, write_json
 from ml_training import schema_data
 from ml_training.query_dsl import equivalent
@@ -41,14 +43,63 @@ def build(profile, seed, excluded):
     raise ValueError("Insufficient distinct executable tasks")
 
 
-def verify(text, row, hidden=False):
-    return equivalent(text, row["expected"], schema_data.tables(row["expected"], row["fixture_seed"], hidden=hidden))
+# v1 (runs before this version was recorded) graded with tables(hidden=True), which shares
+# its boundary-witness and empty tables with the public reward; v2 shares nothing.
+HIDDEN_FIXTURES = "v2"
+
+
+def verify(text, row, hidden=False, hidden_version=HIDDEN_FIXTURES):
+    expected, seed = row["expected"], row["fixture_seed"]
+    if not hidden:
+        fixtures = schema_data.tables(expected, seed, hidden=False)
+    elif hidden_version == "v1":
+        fixtures = schema_data.tables(expected, seed, hidden=True)
+    elif hidden_version == "v2":
+        fixtures = schema_data.hidden_tables(expected, seed)
+    else:
+        raise ValueError(f"Unknown hidden fixture version: {hidden_version}")
+    return equivalent(text, expected, fixtures)
 
 
 def reward(text, row):
     # Binary all-fixture execution reward. No format bonus, partial credit for
     # empty tables, answer-string comparison, or hidden-case access.
     return float(verify(text, row, hidden=False)["passed"])
+
+
+def group_metrics(rows, groups, hidden_version=HIDDEN_FIXTURES):
+    """Grade sampled groups on hidden fixtures; best-of-N selection sees only public checks."""
+    first, selected, any_hidden, public, selected_outputs, exploits = [], [], [], [], [], []
+    for row, group in zip(rows, groups, strict=True):
+        public_results = [verify(o["text"], row, hidden=False) for o in group]
+        hidden_results = [verify(o["text"], row, hidden=True, hidden_version=hidden_version) for o in group]
+        index = next((i for i, r in enumerate(public_results) if r["passed"]), 0)
+        first.append(hidden_results[0]["passed"])
+        selected.append(hidden_results[index]["passed"])
+        any_hidden.append(any(r["passed"] for r in hidden_results))
+        public.append(public_results[index]["passed"])
+        exploits.append(public_results[index]["passed"] and not hidden_results[index]["passed"])
+        selected_outputs.append(
+            {
+                "id": row["id"],
+                "input": row["user"],
+                "expected": row["expected"],
+                "outputs": group,
+                "public_checks": public_results,
+                "hidden_checks": hidden_results,
+                "selected_index": index,
+            }
+        )
+    return {
+        "rows": len(rows),
+        "sampled_pass_at_1": float(np.mean(first)),
+        "verifier_selected_success_at_n": float(np.mean(selected)),
+        "empirical_any_success_at_n": float(np.mean(any_hidden)),
+        "public_selected_pass_rate": float(np.mean(public)),
+        "public_pass_hidden_failure_rate": float(np.mean(exploits)),
+        "n": len(groups[0]),
+        "mean_generation_tokens": float(np.mean([o["generation_tokens"] for group in groups for o in group])),
+    }, selected_outputs
 
 
 def prepare(profile, seed, source_run):
@@ -74,7 +125,7 @@ def prepare(profile, seed, source_run):
             "sft_dataset_sha256": digest(source_folder / "manifest.json"),
             "split_policy": "Distinct ASTs across RL partitions and all SFT examples/challenges; disjoint phrasing families",
             "reward": "1 iff schema-valid output passes all public execution fixtures, otherwise 0",
-            "hidden_evaluation": "Different random-table seed plus boundary and empty fixtures; never used by training reward",
+            "hidden_evaluation": "Fixtures disjoint from the public reward (see schema_data.hidden_tables); never used by training reward",
             "counts": {s: sum(r["split"] == s for r in rows) for s in ["train", "validation", "test"]},
             "files": {p.name: digest(p) for p in folder.glob("*.json")},
         },

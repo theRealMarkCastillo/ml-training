@@ -32,13 +32,25 @@ def task(demo):
     raise ValueError(f"Unknown structured demo: {demo}")
 
 
-def typed_outputs(rows):
-    from ml_training.schema_data import typed_slot
+# The D02 typed_slot baseline knows only training wording, like the trained models.
+# The reference variant knows every split's wording, so it is reported but never
+# selected. Runs recorded before this field existed used all wordings for typed_slot.
+TYPED_SLOT_WORDINGS = "training"
+TYPED_SLOT_REFERENCE = "typed_slot_all_wordings"
 
+
+def typed_wordings(variant, run_wordings=TYPED_SLOT_WORDINGS):
+    return "all" if variant == TYPED_SLOT_REFERENCE else run_wordings
+
+
+def typed_outputs(rows, wordings="all"):
+    from ml_training.schema_data import ALL_STYLES, TRAINING_STYLES, typed_slot
+
+    styles = {"training": TRAINING_STYLES, "all": ALL_STYLES}[wordings]
     outputs = []
     for row in rows:
         try:
-            outputs.append({"text": json.dumps(typed_slot(row["user"]), separators=(",", ":"))})
+            outputs.append({"text": json.dumps(typed_slot(row["user"], styles), separators=(",", ":"))})
         except ValueError as error:
             outputs.append({"text": "", "rejection": str(error)})
     return outputs
@@ -88,8 +100,8 @@ def benchmark(model, tokenizer, rows, demo, variant):
     for i, row in enumerate(rows[:13]):
         start = time.perf_counter()
         output = (
-            typed_outputs([row])[0]
-            if variant == "typed_slot"
+            typed_outputs([row], typed_wordings(variant))[0]
+            if variant.startswith("typed_slot")
             else infer(model, tokenizer, row["system"], row["user"], max_tokens=max_tokens)
         )
         gate(demo, output["text"])
@@ -166,8 +178,9 @@ def train(demo, profile, seed):
         variants = ["base", "tuned"]
         if demo == "schema_dsl":
             variants.append("typed_slot")
-            validation_results["typed_slot"] = data.score(validation, typed_outputs(validation))
-            timings["typed_slot"] = benchmark(None, None, validation, demo, "typed_slot")
+            for name in ["typed_slot", TYPED_SLOT_REFERENCE]:
+                validation_results[name] = data.score(validation, typed_outputs(validation, typed_wordings(name)))
+                timings[name] = benchmark(None, None, validation, demo, name)
         else:
             write_json(run / "quantization.json", export_quantized(run))
             variants.append("quantized_tuned")
@@ -188,13 +201,16 @@ def train(demo, profile, seed):
                 "selected_variant": selected,
                 "validation": validation_results,
                 "rule": "Highest validation semantic/command accuracy, then lowest measured warm p95; educational selection, no production floor",
+                "candidates": variants,
+                "reference_only": [TYPED_SLOT_REFERENCE] if demo == "schema_dsl" else [],
             },
         )
         write_json(run / "benchmarks.json", timings)
         metrics, challenges, predictions, failures = {}, {}, [], []
-        for variant in variants:
-            if variant == "typed_slot":
-                outputs, extra = typed_outputs(test), typed_outputs(challenge)
+        for variant in variants + ([TYPED_SLOT_REFERENCE] if demo == "schema_dsl" else []):
+            if variant.startswith("typed_slot"):
+                wordings = typed_wordings(variant)
+                outputs, extra = typed_outputs(test, wordings), typed_outputs(challenge, wordings)
             else:
                 model, tokenizer = load_variant(run, variant)
                 if variant == "tuned":
@@ -241,6 +257,7 @@ def train(demo, profile, seed):
             challenge_examples=len(challenge),
             replication="single-seed pilot",
             offline_validation="Separate enforced-network-denial run required" if demo == "edge" else None,
+            typed_slot_wordings=TYPED_SLOT_WORDINGS if demo == "schema_dsl" else None,
         )
     except BaseException as error:
         mark_failed(run, error)
@@ -274,8 +291,15 @@ def write_report(run, demo, metrics, challenges, selected, novel_tests=0):
         lines += [
             "",
             "Semantic correctness executes the candidate and oracle AST on randomized, boundary-witness and empty tables. "
-            "The typed-slot baseline is a deterministic parser for the documented bounded language, not constrained neural decoding. "
-            "Its high template accuracy cannot establish general natural-language coverage; the independent challenge includes unsupported wording. "
+            "The typed-slot baseline is a deterministic parser, not constrained neural decoding. Like the trained models, it knows only "
+            "the training wording, so held-out phrasing tests whether rules generalize. "
+            + (
+                f"`{TYPED_SLOT_REFERENCE}` was written knowing every split's wording, including the test wording; it is reported "
+                "to show what that hand-coding buys and is never selected. "
+                if TYPED_SLOT_REFERENCE in metrics
+                else ""
+            )
+            + "The independent challenge includes wording neither parser supports. "
             f"{novel_tests} of {metrics[selected]['rows']} final test examples combine fields not paired during training.",
         ]
     else:
@@ -303,9 +327,11 @@ def reevaluate(run, tolerance=0.0):
     test = [r for r in rows if r["split"] == "test"]
     expected, expected_challenge = read_json(run / "metrics.json"), read_json(run / "challenge.json")
     saved = read_json(run / "predictions.json")
+    run_wordings = info.get("typed_slot_wordings") or "all"
     for variant in expected:
-        if variant == "typed_slot":
-            outputs, extra = typed_outputs(test), typed_outputs(challenge)
+        if variant.startswith("typed_slot"):
+            wordings = typed_wordings(variant, run_wordings)
+            outputs, extra = typed_outputs(test, wordings), typed_outputs(challenge, wordings)
         else:
             model, tokenizer = load_variant(run, variant)
             if variant == "tuned":
@@ -335,15 +361,17 @@ def infer_query(run, query, variant="selected"):
     from ml_training.mlx_models import infer
 
     verify_run(run)
-    demo = read_json(run / "run.json")["demo"]
+    info = read_json(run / "run.json")
+    demo = info["demo"]
     data, max_tokens = task(demo)
     if variant == "selected":
         variant = read_json(run / "selection.json")["selected_variant"]
-    allowed = ["base", "tuned", "typed_slot" if demo == "schema_dsl" else "quantized_tuned"]
+    allowed = ["base", "tuned", *(read_json(run / "metrics.json") if demo == "schema_dsl" else ["quantized_tuned"])]
+    allowed = list(dict.fromkeys(allowed))
     if variant not in allowed:
         raise ValueError(f"Choose a variant from {allowed}")
-    if variant == "typed_slot":
-        output = typed_outputs([{"user": query}])[0]
+    if variant.startswith("typed_slot"):
+        output = typed_outputs([{"user": query}], typed_wordings(variant, info.get("typed_slot_wordings") or "all"))[0]
     else:
         model, tokenizer = load_variant(run, variant)
         output = infer(model, tokenizer, data.SYSTEM, query, max_tokens=max_tokens)

@@ -21,3 +21,10 @@ def test_typed_baseline_has_no_oracle_access():
     assert gate("schema_dsl", outputs[0]["text"])["accepted"]
     assert outputs[1]["text"] == "" and "rejection" in outputs[1]
     assert not gate("schema_dsl", outputs[1]["text"])["accepted"]
+
+
+def test_typed_wordings_keep_old_runs_replayable():
+    from ml_training.structured import TYPED_SLOT_REFERENCE, typed_wordings
+
+    assert typed_wordings("typed_slot", "training") == "training"
+    assert typed_wordings(TYPED_SLOT_REFERENCE, "training") == "all"

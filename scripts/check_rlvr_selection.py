@@ -2,16 +2,16 @@
 
 from unittest.mock import patch
 
-from ml_training.rlvr import group_metrics
+from ml_training.rlvr_data import group_metrics
 
 
-def verifier(text, row, hidden=False):
+def verifier(text, row, hidden=False, hidden_version=None):
     passed = text == "correct" or text == "public_only" and not hidden
     return {"passed": passed, "valid": True, "cases": 3, "cases_passed": 3 if passed else 0}
 
 
 row = {"id": "challenge", "user": "Count a hidden boundary", "expected": {}}
-with patch("ml_training.rlvr.data.verify", verifier):
+with patch("ml_training.rlvr_data.verify", verifier):
     group = [{"text": "public_only", "generation_tokens": 1}, {"text": "correct", "generation_tokens": 1}]
     metrics, records = group_metrics([row], [group])
     assert records[0]["selected_index"] == 0

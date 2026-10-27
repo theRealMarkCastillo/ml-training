@@ -31,6 +31,15 @@ def export_snapshot(selection_dir):
     def selected(name):
         return read(selection_dir / name)
 
+    def correction(name, run_path):
+        """Supplemental re-analysis of a selected run; absent for exports without it."""
+        if not (selection_dir / name).is_file():
+            return None
+        value = read(selection_dir / name)
+        if relative(value["run"]) != relative(run_path):
+            raise ValueError(f"{name} does not describe the selected run {relative(run_path)}")
+        return value
+
     def run(path, files):
         path = Path(path)
         manifest = read(path / "run.json")
@@ -47,8 +56,27 @@ def export_snapshot(selection_dir):
     demos = {}
     p = selected("selected_distillation_run.json")["run"]
     demos["D01"] = run(p, ["metrics.json", "challenge.json", "costs.json"])
+    outputs = Path(p) / "teacher_curation/outputs.jsonl"
+    if (ROOT / outputs).is_file():
+        content = (ROOT / outputs).read_bytes()
+        sources[relative(outputs)] = hashlib.sha256(content).hexdigest()
+        records = [json.loads(line) for line in content.decode().splitlines()]
+        # The teacher answer is kept only if it equals the oracle label, so curation
+        # filters examples; it never changes a training target.
+        demos["D01"]["curation"] = {
+            "examples": len(records),
+            "accepted": sum(r["accepted"] for r in records),
+            "accepted_equal_oracle": all(r["parsed"] == r["expected"] for r in records if r["accepted"]),
+            "rejected_by_template": dict(Counter(r["id"].rsplit("-", 1)[0] for r in records if not r["accepted"])),
+        }
     structured = selected("selected_structured_runs.json")
     demos["D02"] = run(structured["schema_dsl"]["local"], ["metrics.json", "challenge.json"])
+    if rescored := correction("d02-typed-slot-training-wording.json", structured["schema_dsl"]["local"]):
+        demos["D02"]["training_wording_baseline"] = {
+            "metrics": {split: rescored["metrics"]["training"][split] for split in ["validation", "test", "challenge"]},
+            "recorded_selection": rescored["recorded_selection"],
+            "selection_with_training_wording_baseline": rescored["selection_with_training_wording_baseline"],
+        }
     p = selected("selected_rlvr_run.json")["run"]
     demos["D03"] = run(p, ["metrics.json", "challenge.json"])
     training = read(Path(p) / "grpo_training.json")
@@ -62,6 +90,8 @@ def export_snapshot(selection_dir):
             "elapsed_training_seconds",
         ]
     }
+    if rescored := correction("rlvr-hidden-v2.json", p):
+        demos["D03"]["hidden_v2"] = rescored["metrics"]["v2"]
     p = structured["edge"]["local"]
     demos["D04"] = run(p, ["metrics.json", "challenge.json", "selection.json", "quantization.json"])
     predictions = read(Path(p) / "predictions.json")
@@ -91,6 +121,17 @@ def export_snapshot(selection_dir):
     for row in profile["runs"]:
         if row["source_manifest_sha256"] != sources[row["run"] + "/run.json"]:
             raise ValueError("Paired classifier source manifest changed")
+    if (selection_dir / "onnx-fresh-process.json").is_file():
+        startup = read(selection_dir / "onnx-fresh-process.json")
+        if {relative(r["run"]) for r in startup["runs"]} != {r["run"] for r in demos["D06"]["runs"]}:
+            raise ValueError("Fresh-process profile does not match selected runs")
+        demos["D06"]["fresh_process_remeasured"] = [
+            {
+                "run": relative(r["run"]),
+                **{k: r[k]["median_seconds"] for k in ["minimal_scorer", "with_training_imports"]},
+            }
+            for r in startup["runs"]
+        ]
     demos["D07"] = run(cpu["explainability-41"], ["feature_edit.json", "correlated_features.json"])
     p = selected("selected_retrieval_run.json")["run"]
     demos["D08"] = run(p, ["metrics.json"])

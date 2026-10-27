@@ -44,3 +44,17 @@ def test_valid_syntax_does_not_imply_correct_query():
     result = score([{"expected": expected, "fixture_seed": 41}], [{"text": json.dumps(wrong)}])
     assert result["json_parse_rate"] == 1 and result["schema_validity"] == 1
     assert result["semantic_accuracy"] == 0
+
+
+def test_training_wording_parser_knows_only_training_styles():
+    from ml_training.schema_data import TRAINING_STYLES
+
+    rows = build("local", 41)
+    for row in rows:
+        try:
+            parsed = typed_slot(row["user"], TRAINING_STYLES)
+        except ValueError:
+            assert row["split"] != "train", row["user"]
+        else:
+            assert parsed == row["expected"]
+    assert all(typed_slot(r["user"], TRAINING_STYLES) == r["expected"] for r in rows if r["split"] == "train")

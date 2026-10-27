@@ -107,6 +107,11 @@ def curate(folder, rows):
         "accepted": len(curated),
         "rejected": len(training) - len(curated),
         "accepted_by_intent": dict(counts),
+        # Acceptance requires exact agreement with the oracle, so accepted answers ARE
+        # the gold labels: the teacher selects which examples train the student.
+        "teacher_role": "filter: an answer is accepted only if identical to the synthetic oracle label",
+        "accepted_answers_equal_oracle": all(accepted[r["id"]]["parsed"] == r["expected"] for r in curated),
+        "rejected_by_family": dict(Counter(r["family"] for r in training if r["id"] not in accepted)),
         "source": "Actual local teacher outputs; exact synthetic-oracle validation",
         "cache_output_sha256": digest(raw_file),
         "generation_elapsed_this_invocation": time.perf_counter() - started,
@@ -330,8 +335,16 @@ def write_report(run, results, challenge, winner, curation, costs):
     lines += [
         "",
         "The classical baseline learns TF-IDF/logistic routing and uses a documented regex for account extraction. "
-        f"The teacher is {models['teacher']['model_id']} and the student {models['student']['model_id']}, both run locally. Student training uses validated teacher final outputs only; "
-        "no private reasoning traces or teacher-generated evaluation labels are used. Invalid JSON remains a failure and is not repaired after generation.",
+        f"The teacher is {models['teacher']['model_id']} and the student {models['student']['model_id']}, both run locally. A teacher answer is kept only when it exactly matches the synthetic oracle, "
+        "so the student's training targets are the gold labels and the teacher acts as a filter on which examples are used. "
+        f"It removed {curation['rejected']} of {curation['examples']} examples"
+        + (
+            f", concentrated in {', '.join(sorted(curation['rejected_by_family']))}"
+            if curation.get("rejected_by_family")
+            else ""
+        )
+        + "; those are cases the teacher found hard, so the student sees fewer of them. "
+        "No private reasoning traces or teacher-generated evaluation labels are used. Invalid JSON remains a failure and is not repaired after generation.",
         "",
         f"Independent challenge metrics:\n```json\n{json.dumps(challenge, indent=2)}\n```",
         "",

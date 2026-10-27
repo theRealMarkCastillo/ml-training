@@ -28,40 +28,6 @@ from ml_training import rlvr_data as data
 from ml_training import rlvr_models as models
 
 
-def group_metrics(rows, groups):
-    first, selected, any_hidden, public, selected_outputs, exploits = [], [], [], [], [], []
-    for row, group in zip(rows, groups, strict=True):
-        public_results = [data.verify(o["text"], row, hidden=False) for o in group]
-        hidden_results = [data.verify(o["text"], row, hidden=True) for o in group]
-        index = next((i for i, r in enumerate(public_results) if r["passed"]), 0)
-        first.append(hidden_results[0]["passed"])
-        selected.append(hidden_results[index]["passed"])
-        any_hidden.append(any(r["passed"] for r in hidden_results))
-        public.append(public_results[index]["passed"])
-        exploits.append(public_results[index]["passed"] and not hidden_results[index]["passed"])
-        selected_outputs.append(
-            {
-                "id": row["id"],
-                "input": row["user"],
-                "expected": row["expected"],
-                "outputs": group,
-                "public_checks": public_results,
-                "hidden_checks": hidden_results,
-                "selected_index": index,
-            }
-        )
-    return {
-        "rows": len(rows),
-        "sampled_pass_at_1": float(np.mean(first)),
-        "verifier_selected_success_at_n": float(np.mean(selected)),
-        "empirical_any_success_at_n": float(np.mean(any_hidden)),
-        "public_selected_pass_rate": float(np.mean(public)),
-        "public_pass_hidden_failure_rate": float(np.mean(exploits)),
-        "n": len(groups[0]),
-        "mean_generation_tokens": float(np.mean([o["generation_tokens"] for group in groups for o in group])),
-    }, selected_outputs
-
-
 def train_grpo(run, rows, profile, seed, device):
     model, tokenizer = models.load(run / "shared_sft", device, trainable=True, seed=seed)
     fusion = read_json(run / "shared_sft/fusion_evidence.json")
@@ -236,7 +202,7 @@ def train_sft_control(run, rows, seed, device, seconds):
     return evidence
 
 
-def evaluate_variants(run, test, challenge, seed, device):
+def evaluate_variants(run, test, challenge, seed, device, hidden_version=data.HIDDEN_FIXTURES):
     results, challenges, predictions = {}, {}, {}
     variants = {
         "base": (models.original_path(), None),
@@ -254,8 +220,8 @@ def evaluate_variants(run, test, challenge, seed, device):
         for split, rows, destination in [("test", test, results), ("challenge", challenge, challenges)]:
             greedy = models.generate(model, tokenizer, rows, n=1, temperature=0.0, seed=seed)
             sampled = models.generate(model, tokenizer, rows, n=4, temperature=1.0, seed=seed)
-            greedy_metrics, greedy_records = group_metrics(rows, greedy)
-            sampled_metrics, sampled_records = group_metrics(rows, sampled)
+            greedy_metrics, greedy_records = data.group_metrics(rows, greedy, hidden_version)
+            sampled_metrics, sampled_records = data.group_metrics(rows, sampled, hidden_version)
             destination[variant] = {
                 "greedy_pass_at_1": greedy_metrics["sampled_pass_at_1"],
                 **sampled_metrics,
@@ -325,7 +291,7 @@ def train(source_run, profile, seed, device):
             "",
             "This is one synthetic-data pilot, not evidence of general reasoning or self-correction. "
             "GRPO uses binary execution rewards on public tables, four stochastic completions per task, and a fixed optimizer-step budget. "
-            "Hidden randomized fixtures never enter training rewards. The verifier chooses the first publicly passing output, or the first output if none passes. "
+            f"Hidden fixtures ({data.HIDDEN_FIXTURES}) share no table with the public reward and never enter training. The verifier chooses the first publicly passing output, or the first output if none passes. "
             "Greedy and sampled results are distinct; all variants receive the same four-sample evaluation budget. "
             "The continued-SFT control begins at the identical fused SFT checkpoint with identical initial adapter weights and runs for the measured GRPO training wall time. "
             "This matches a host-time resource budget, not FLOPs or optimizer steps. SFT has oracle labels, whereas GRPO has public verifier rewards.",
@@ -347,6 +313,7 @@ def train(source_run, profile, seed, device):
             test_examples=len(test),
             challenge_examples=len(challenge),
             replication="single-seed fixed-budget pilot",
+            hidden_fixtures=data.HIDDEN_FIXTURES,
         )
     except BaseException as error:
         mark_failed(run, error)
@@ -365,7 +332,9 @@ def reevaluate(run, device, tolerance=0.0):
         raise ValueError("RLVR dataset manifest changed")
     rows, challenge = data.load(folder)
     test = [r for r in rows if r["split"] == "test"]
-    metrics, challenges, predictions = evaluate_variants(run, test, challenge, info["seed"], device)
+    # Runs recorded before fixture versioning were graded with v1.
+    hidden_version = info.get("hidden_fixtures", "v1")
+    metrics, challenges, predictions = evaluate_variants(run, test, challenge, info["seed"], device, hidden_version)
     original = read_json(run / "predictions.json")
     for variant, splits in predictions.items():
         for split, modes in splits.items():
