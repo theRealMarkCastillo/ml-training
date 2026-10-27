@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M5XY4HYBS4FB2DFVB3T3YCHF",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "scripts/profile_onnx_startup.py",
+    "scripts/rescore_rlvr_hidden.py",
+    "scripts/rescore_typed_slot.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 138,
+    "cache_creation_tokens": 160555,
+    "cache_read_tokens": 18965355,
+    "output_tokens": 65329,
+    "api_call_count": 67
+  },
+  "redaction": {
+    "replacements": 5,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 5,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}
