@@ -337,14 +337,18 @@ def write_report(run, results, challenge, winner, curation, costs):
         "The classical baseline learns TF-IDF/logistic routing and uses a documented regex for account extraction. "
         f"The teacher is {models['teacher']['model_id']} and the student {models['student']['model_id']}, both run locally. A teacher answer is kept only when it exactly matches the synthetic oracle, "
         "so the student's training targets are the gold labels and the teacher acts as a filter on which examples are used. "
-        f"It removed {curation['rejected']} of {curation['examples']} examples"
         + (
-            f", concentrated in {', '.join(sorted(curation['rejected_by_family']))}"
-            if curation.get("rejected_by_family")
-            else ""
+            f"It removed {curation['rejected']} of {curation['examples']} examples"
+            + (
+                f", concentrated in {', '.join(sorted(curation['rejected_by_family']))}"
+                if curation.get("rejected_by_family")
+                else ""
+            )
+            + "; those are cases the teacher found hard, so the student sees fewer of them. "
+            if curation["rejected"]
+            else f"It kept all {curation['examples']} examples. "
         )
-        + "; those are cases the teacher found hard, so the student sees fewer of them. "
-        "No private reasoning traces or teacher-generated evaluation labels are used. Invalid JSON remains a failure and is not repaired after generation.",
+        + "No private reasoning traces or teacher-generated evaluation labels are used. Invalid JSON remains a failure and is not repaired after generation.",
         "",
         f"Independent challenge metrics:\n```json\n{json.dumps(challenge, indent=2)}\n```",
         "",
